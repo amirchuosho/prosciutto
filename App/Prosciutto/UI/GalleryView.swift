@@ -6,8 +6,7 @@ struct GalleryView: View {
     @EnvironmentObject var theme: ThemeManager
     @FocusState private var searchFocused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    var onEdit: (ClipItem) -> Void = { _ in }
+    @State private var editingItem: ClipItem?
 
     private let kinds: [ClipKind] = [.text, .link, .image, .color, .code, .file]
 
@@ -32,6 +31,13 @@ struct GalleryView: View {
         .preferredColorScheme(theme.colorScheme)
         .onAppear { searchFocused = true }
         .background(keyHandlers)
+        .sheet(item: $editingItem) { item in
+            EditSheet(item: item) { newText in
+                Task { await model.updateText(item, newText: newText) }
+            }
+            .tint(theme.accent)
+            .preferredColorScheme(theme.colorScheme)
+        }
     }
 
     // MARK: Header
@@ -114,7 +120,7 @@ struct GalleryView: View {
 
     private func editClosure(for item: ClipItem) -> (() -> Void)? {
         switch item.kind {
-        case .text, .rtf, .code, .link, .color: return { onEdit(item) }
+        case .text, .rtf, .code, .link, .color: return { editingItem = item }
         default: return nil
         }
     }
@@ -122,7 +128,7 @@ struct GalleryView: View {
     @ViewBuilder private func cardMenu(_ item: ClipItem) -> some View {
         Button(item.isPinned ? "Unpin" : "Pin to front") { Task { await model.togglePin(item) } }
         if editClosure(for: item) != nil {
-            Button("Edit…") { onEdit(item) }
+            Button("Edit…") { editingItem = item }
         }
         Divider()
         Button("Delete", role: .destructive) { Task { await model.delete(item) } }

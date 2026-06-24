@@ -59,4 +59,14 @@ final class GalleryViewModel: ObservableObject {
         try? await store.delete(id: item.id)
         await reload()
     }
+
+    func updateText(_ item: ClipItem, newText: String) async {
+        var updated = item
+        updated.textPlain = newText
+        updated.rtfData = nil
+        updated.htmlString = nil
+        updated.contentHash = ContentHasher.hash(kind: item.kind, primary: Data(newText.utf8))
+        try? await store.update(updated)
+        await reload()
+    }
 }

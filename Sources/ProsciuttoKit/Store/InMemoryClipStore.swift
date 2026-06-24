@@ -15,6 +15,11 @@ public actor InMemoryClipStore: ClipStore {
         }
     }
 
+    public func update(_ item: ClipItem) async throws {
+        guard items[item.id] != nil else { return }
+        items[item.id] = item
+    }
+
     public func all() async throws -> [ClipItem] {
         items.values.sorted { $0.lastUsedAt > $1.lastUsedAt }
     }

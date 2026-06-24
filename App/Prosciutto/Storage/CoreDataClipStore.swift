@@ -24,6 +24,18 @@ final class CoreDataClipStore: ClipStore {
         }
     }
 
+    func update(_ item: ClipItem) async throws {
+        try await perform { ctx in
+            let req = CDClipItem.fetchRequest()
+            req.predicate = NSPredicate(format: "id == %@", item.id as CVarArg)
+            req.fetchLimit = 1
+            if let cd = try ctx.fetch(req).first {
+                Self.write(item, into: cd)
+            }
+            try ctx.save()
+        }
+    }
+
     func all() async throws -> [ClipItem] {
         try await perform { ctx in
             let req = CDClipItem.fetchRequest()
