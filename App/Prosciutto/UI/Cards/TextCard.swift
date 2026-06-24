@@ -4,20 +4,16 @@ import ProsciuttoKit
 struct TextCard: View {
     let item: ClipItem
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 0) {
             Text(item.textPlain ?? "")
-                .font(.system(size: 11))
-                .lineLimit(5)
+                .font(.system(size: 11.5))
+                .lineLimit(4)
+                .foregroundStyle(.primary)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            footer
+            if let app = item.sourceAppName {
+                Text(app).font(.system(size: 9)).foregroundStyle(.tertiary).lineLimit(1)
+            }
         }
-        .padding(10)
-    }
-    private var footer: some View {
-        HStack(spacing: 4) {
-            Image(systemName: "text.alignleft").font(.caption2)
-            Text(item.sourceAppName ?? "Text").font(.caption2)
-        }
-        .foregroundStyle(.secondary)
+        .padding(EdgeInsets(top: 30, leading: 11, bottom: 10, trailing: 11))
     }
 }
