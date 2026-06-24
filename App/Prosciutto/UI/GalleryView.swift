@@ -24,12 +24,8 @@ struct GalleryView: View {
                 }
             }
         }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 22)
-                .fill(.ultraThinMaterial)
-                .overlay(RoundedRectangle(cornerRadius: 22).strokeBorder(.white.opacity(0.08)))
-        )
+        .padding(18)
+        .background(panelBackground)
         .tint(theme.accent)
         .preferredColorScheme(theme.colorScheme)
         .onAppear { searchFocused = true }
@@ -112,29 +108,60 @@ struct GalleryView: View {
         .buttonStyle(.plain)
     }
 
+    // MARK: Background
+
+    private var panelBackground: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 26, style: .continuous).fill(.ultraThinMaterial)
+            // accent glow pooled at the bottom
+            RadialGradient(colors: [theme.accent.opacity(0.28), .clear],
+                           center: .bottom, startRadius: 4, endRadius: 520)
+                .blendMode(.plusLighter)
+            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                .strokeBorder(
+                    LinearGradient(colors: [.white.opacity(0.16), .white.opacity(0.03)],
+                                   startPoint: .top, endPoint: .bottom), lineWidth: 1)
+        }
+        .compositingGroup()
+    }
+
     // MARK: Header
 
     private var header: some View {
-        HStack(spacing: 10) {
-            HStack(spacing: 6) {
-                Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
-                TextField("Search clipboard…", text: $model.query.text)
-                    .textFieldStyle(.plain)
-                    .focused($searchFocused)
+        HStack(spacing: 12) {
+            HStack(spacing: 7) {
+                Image(systemName: "rectangle.stack.fill")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(theme.accent)
+                Text("Prosciutto").font(.system(size: 15, weight: .heavy, design: .rounded))
             }
-            .padding(.horizontal, 12).padding(.vertical, 8)
-            .background(.regularMaterial, in: Capsule())
-            .frame(maxWidth: 260)
+
+            searchField
 
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 6) {
-                    ForEach(kinds, id: \.self) { filterPill($0) }
-                }
+                HStack(spacing: 6) { ForEach(kinds, id: \.self) { filterPill($0) } }
             }
             Spacer(minLength: 0)
-            Text("⌘1–9 paste · ⏎ select · esc close")
-                .font(.system(size: 10)).foregroundStyle(.tertiary)
+            Text("⌘1–9 · ⏎ · esc")
+                .font(.system(size: 10, weight: .medium, design: .rounded))
+                .foregroundStyle(.tertiary)
         }
+    }
+
+    private var searchField: some View {
+        HStack(spacing: 7) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(searchFocused ? theme.accent : .secondary)
+            TextField("Search clipboard…", text: $model.query.text)
+                .textFieldStyle(.plain)
+                .focused($searchFocused)
+        }
+        .padding(.horizontal, 14).padding(.vertical, 9)
+        .background(.regularMaterial, in: Capsule())
+        .overlay(Capsule().strokeBorder(theme.accent.opacity(searchFocused ? 0.8 : 0), lineWidth: 1.5))
+        .shadow(color: theme.accent.opacity(searchFocused ? 0.35 : 0), radius: 8)
+        .frame(maxWidth: 250)
+        .animation(.easeOut(duration: 0.18), value: searchFocused)
     }
 
     private func filterPill(_ kind: ClipKind) -> some View {
@@ -182,7 +209,7 @@ struct GalleryView: View {
                 .animation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.8),
                            value: model.items)
             }
-            .frame(height: 156)
+            .frame(height: 176)
             .onChange(of: model.selection) { _, _ in scrollToSelection(proxy) }
         }
     }
@@ -227,7 +254,7 @@ struct GalleryView: View {
             Text(model.query.text.isEmpty ? "Nothing copied yet" : "No matches")
                 .font(.callout).foregroundStyle(.secondary)
         }
-        .frame(height: 156)
+        .frame(height: 176)
         .frame(maxWidth: .infinity)
     }
 }

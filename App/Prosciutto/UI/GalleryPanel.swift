@@ -51,7 +51,7 @@ final class GalleryPanel: NSObject {
         guard let screen = NSScreen.main else { return }
         previousApp = NSWorkspace.shared.frontmostApplication
         let margin: CGFloat = 18
-        let height: CGFloat = 272
+        let height: CGFloat = 304
         let visible = screen.visibleFrame
         panel.setFrame(NSRect(x: visible.minX + margin,
                               y: visible.minY + margin,

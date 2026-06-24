@@ -11,87 +11,114 @@ struct ClipCard: View {
     var onEdit: (() -> Void)? = nil
 
     @State private var hovering = false
+    @State private var pinPulse = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var style: KindStyle { KindStyle.of(item.kind) }
+    private var glow: Color { isSelected ? accent : style.color }
+    private var showActions: Bool { hovering || isSelected }
     private var editable: Bool {
         switch item.kind { case .text, .rtf, .code, .link, .color: return true; default: return false }
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            content
-        }
-        .frame(width: 168, height: 128)
-        .background(cardBackground)
-        .overlay(alignment: .top) { topBar }
-        .overlay(alignment: .bottomTrailing) { if hovering { actions } }
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .strokeBorder(isSelected ? accent : style.color.opacity(0.18),
-                              lineWidth: isSelected ? 2.5 : 1)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .shadow(color: isSelected ? accent.opacity(0.35) : .black.opacity(0.25),
-                radius: isSelected ? 12 : 6, y: 3)
-        .scaleEffect(hovering && !reduceMotion ? 1.03 : (isSelected ? 1.0 : 0.985))
-        .animation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.7),
-                   value: isSelected)
-        .animation(reduceMotion ? nil : .easeOut(duration: 0.16), value: hovering)
-        .onHover { hovering = $0 }
+        VStack(alignment: .leading, spacing: 0) { content }
+            .frame(width: 182, height: 134)
+            .background(cardBackground)
+            .overlay(alignment: .top) { topBar }
+            .overlay(alignment: .bottom) { if showActions { actionBar.transition(.move(edge: .bottom).combined(with: .opacity)) } }
+            .overlay(border)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .shadow(color: glow.opacity(isSelected ? 0.55 : (hovering ? 0.4 : 0.0)),
+                    radius: isSelected ? 18 : 12, y: 4)
+            .shadow(color: .black.opacity(0.3), radius: 5, y: 3)
+            .scaleEffect(isSelected ? 1.05 : (hovering ? 1.02 : 0.97))
+            .offset(y: isSelected ? -4 : 0)
+            .animation(reduceMotion ? nil : .spring(response: 0.32, dampingFraction: 0.68), value: isSelected)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.16), value: hovering)
+            .onHover { hovering = $0 }
     }
 
     private var cardBackground: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 14).fill(.ultraThinMaterial)
-            LinearGradient(colors: [style.color.opacity(0.16), style.color.opacity(0.03)],
-                           startPoint: .top, endPoint: .bottom)
+            RoundedRectangle(cornerRadius: 16, style: .continuous).fill(.ultraThinMaterial)
+            LinearGradient(colors: [style.color.opacity(isSelected ? 0.38 : 0.24),
+                                    style.color.opacity(0.05)],
+                           startPoint: .topLeading, endPoint: .bottomTrailing)
+            // top sheen
+            LinearGradient(colors: [.white.opacity(0.10), .clear],
+                           startPoint: .top, endPoint: .center)
         }
+    }
+
+    private var border: some View {
+        RoundedRectangle(cornerRadius: 16, style: .continuous)
+            .strokeBorder(
+                LinearGradient(colors: [glow.opacity(isSelected ? 0.95 : 0.4),
+                                        glow.opacity(isSelected ? 0.5 : 0.12)],
+                               startPoint: .top, endPoint: .bottom),
+                lineWidth: isSelected ? 2.5 : 1.2)
     }
 
     private var topBar: some View {
         HStack {
             HStack(spacing: 4) {
-                Image(systemName: style.icon).font(.system(size: 9, weight: .bold))
-                Text(style.label).font(.system(size: 9, weight: .bold))
+                Image(systemName: style.icon).font(.system(size: 9, weight: .heavy))
+                Text(style.label).font(.system(size: 9, weight: .heavy)).tracking(0.5)
             }
-            .foregroundStyle(style.color)
-            .padding(.horizontal, 6).padding(.vertical, 3)
-            .background(style.color.opacity(0.18), in: Capsule())
+            .foregroundStyle(.white)
+            .padding(.horizontal, 7).padding(.vertical, 3.5)
+            .background(
+                Capsule().fill(style.color.gradient)
+                    .shadow(color: style.color.opacity(0.6), radius: 4, y: 1)
+            )
 
             Spacer()
 
             if item.isPinned {
-                Image(systemName: "pin.fill").font(.system(size: 9)).foregroundStyle(accent)
+                Image(systemName: "pin.fill").font(.system(size: 10))
+                    .foregroundStyle(accent)
+                    .rotationEffect(.degrees(pinPulse ? -12 : 0))
+                    .scaleEffect(pinPulse ? 1.3 : 1.0)
             }
             if let index, index <= 9 {
                 Text("⌘\(index)")
-                    .font(.system(size: 9, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .foregroundStyle(isSelected ? .white : .secondary)
                     .padding(.horizontal, 5).padding(.vertical, 2)
-                    .background(.thinMaterial, in: Capsule())
+                    .background(Capsule().fill(isSelected ? accent : Color.secondary.opacity(0.25)))
             }
         }
-        .padding(7)
+        .padding(8)
     }
 
-    private var actions: some View {
-        HStack(spacing: 4) {
-            actionButton(item.isPinned ? "pin.slash" : "pin", onPin)
-            if editable, let onEdit { actionButton("pencil", onEdit) }
-            actionButton("xmark", onDelete, destructive: true)
+    private var actionBar: some View {
+        HStack(spacing: 6) {
+            actionButton(item.isPinned ? "pin.slash.fill" : "pin.fill", tint: accent) {
+                if !reduceMotion {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.4)) { pinPulse = true }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { pinPulse = false }
+                }
+                onPin()
+            }
+            if editable, let onEdit { actionButton("pencil", tint: .white, action: onEdit) }
+            Spacer(minLength: 0)
+            actionButton("trash.fill", tint: .red, action: onDelete)
         }
-        .padding(6)
+        .padding(.horizontal, 8).padding(.vertical, 7)
+        .background(
+            LinearGradient(colors: [.black.opacity(0.55), .clear], startPoint: .bottom, endPoint: .top)
+        )
     }
 
-    private func actionButton(_ icon: String, _ action: @escaping () -> Void,
-                              destructive: Bool = false) -> some View {
+    private func actionButton(_ icon: String, tint: Color, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: icon)
-                .font(.system(size: 10, weight: .bold))
-                .foregroundStyle(destructive ? Color.red : .primary)
-                .frame(width: 22, height: 22)
-                .background(.regularMaterial, in: Circle())
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(tint)
+                .frame(width: 26, height: 26)
+                .background(Circle().fill(.ultraThinMaterial))
+                .overlay(Circle().strokeBorder(tint.opacity(0.5), lineWidth: 1))
         }
         .buttonStyle(.plain)
     }
