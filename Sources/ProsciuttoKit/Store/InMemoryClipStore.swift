@@ -49,6 +49,11 @@ public actor InMemoryClipStore: ClipStore {
         return section
     }
 
+    public func updateSection(_ section: ClipSection) async throws {
+        guard sectionStore[section.id] != nil else { return }
+        sectionStore[section.id] = section
+    }
+
     public func deleteSection(id: UUID) async throws {
         sectionStore[id] = nil
         for (key, var item) in items where item.sectionID == id {

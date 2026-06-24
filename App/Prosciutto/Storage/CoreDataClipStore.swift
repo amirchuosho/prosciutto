@@ -145,6 +145,20 @@ final class CoreDataClipStore: ClipStore {
         }
     }
 
+    func updateSection(_ section: ClipSection) async throws {
+        try await perform { ctx in
+            let req = CDSection.fetchRequest()
+            req.predicate = NSPredicate(format: "id == %@", section.id as CVarArg)
+            req.fetchLimit = 1
+            if let cd = try ctx.fetch(req).first {
+                cd.name = section.name
+                cd.colorHex = section.colorHex
+                cd.sortIndex = Int64(section.sortIndex)
+            }
+            try ctx.save()
+        }
+    }
+
     func deleteSection(id: UUID) async throws {
         try await perform { ctx in
             let sreq = CDSection.fetchRequest()

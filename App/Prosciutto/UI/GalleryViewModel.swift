@@ -60,6 +60,24 @@ final class GalleryViewModel: ObservableObject {
         await reload()
     }
 
+    var sectionColors: [String] { sectionPalette }
+
+    func recolorSection(_ section: ClipSection, hex: String) async {
+        var updated = section
+        updated.colorHex = hex
+        try? await store.updateSection(updated)
+        await reload()
+    }
+
+    func renameSection(_ section: ClipSection, name: String) async {
+        let trimmed = name.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return }
+        var updated = section
+        updated.name = trimmed
+        try? await store.updateSection(updated)
+        await reload()
+    }
+
     func assign(_ item: ClipItem, to sectionID: UUID?) async {
         try? await store.assign(itemID: item.id, to: sectionID)
         await reload()

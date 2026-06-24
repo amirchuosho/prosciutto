@@ -11,6 +11,7 @@ public protocol ClipStore: Sendable {
     // Sections ("tabs")
     func sections() async throws -> [ClipSection]
     func createSection(name: String, colorHex: String) async throws -> ClipSection
+    func updateSection(_ section: ClipSection) async throws
     func deleteSection(id: UUID) async throws
     func assign(itemID: UUID, to sectionID: UUID?) async throws
 }

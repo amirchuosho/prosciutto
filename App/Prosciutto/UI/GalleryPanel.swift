@@ -9,16 +9,19 @@ final class KeyablePanel: NSPanel {
     override var canBecomeMain: Bool { true }
 }
 
-final class GalleryPanel {
+final class GalleryPanel: NSObject {
     private let panel: KeyablePanel
     /// The app that was frontmost when the gallery opened — paste returns here.
     private(set) var previousApp: NSRunningApplication?
+    /// Called when the panel loses key focus (click outside), unless a sheet is up.
+    var onResign: (() -> Void)?
 
     init(content: @escaping () -> AnyView) {
-        panel = KeyablePanel(contentRect: NSRect(x: 0, y: 0, width: 800, height: 240),
+        panel = KeyablePanel(contentRect: NSRect(x: 0, y: 0, width: 900, height: 260),
                              styleMask: [.borderless, .nonactivatingPanel],
                              backing: .buffered, defer: true)
-        panel.level = .floating
+        super.init()
+        panel.level = .popUpMenu                       // above floating windows / most apps
         panel.isFloatingPanel = true
         panel.hidesOnDeactivate = false
         panel.backgroundColor = .clear
@@ -29,13 +32,26 @@ final class GalleryPanel {
         let host = NSHostingView(rootView: content())
         host.autoresizingMask = [.width, .height]
         panel.contentView = host
+
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(panelResignedKey),
+            name: NSWindow.didResignKeyNotification, object: panel)
     }
+
+    @objc private func panelResignedKey() {
+        // Ignore when a sheet (edit / new-section alert) is what took focus.
+        guard panel.attachedSheet == nil else { return }
+        onResign?()
+    }
+
+    var hasSheet: Bool { panel.attachedSheet != nil }
+    var isVisible: Bool { panel.isVisible }
 
     func show() {
         guard let screen = NSScreen.main else { return }
         previousApp = NSWorkspace.shared.frontmostApplication
         let margin: CGFloat = 18
-        let height: CGFloat = 252
+        let height: CGFloat = 272
         let visible = screen.visibleFrame
         panel.setFrame(NSRect(x: visible.minX + margin,
                               y: visible.minY + margin,
@@ -51,8 +67,4 @@ final class GalleryPanel {
         panel.orderOut(nil)
         previousApp?.activate()
     }
-
-    func toggle() { panel.isVisible ? hide() : show() }
-
-    var isVisible: Bool { panel.isVisible }
 }

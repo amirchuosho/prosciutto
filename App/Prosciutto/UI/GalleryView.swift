@@ -33,7 +33,6 @@ struct GalleryView: View {
         .tint(theme.accent)
         .preferredColorScheme(theme.colorScheme)
         .onAppear { searchFocused = true }
-        .background(keyHandlers)
         .sheet(item: $editingItem) { item in
             EditSheet(item: item) { newText in
                 Task { await model.updateText(item, newText: newText) }
@@ -72,6 +71,15 @@ struct GalleryView: View {
                         model.sectionFilter = .section(section.id)
                     }
                     .contextMenu {
+                        Menu("Color") {
+                            ForEach(model.sectionColors, id: \.self) { hex in
+                                Button {
+                                    Task { await model.recolorSection(section, hex: hex) }
+                                } label: {
+                                    Label(hex, systemImage: section.colorHex == hex ? "checkmark.circle.fill" : "circle.fill")
+                                }
+                            }
+                        }
                         Button("Delete section", role: .destructive) {
                             Task { await model.deleteSection(section) }
                         }
@@ -161,7 +169,7 @@ struct GalleryView: View {
                                  onPin: { Task { await model.togglePin(item) } },
                                  onDelete: { Task { await model.delete(item) } },
                                  onEdit: editClosure(for: item))
-                            .id(idx)
+                            .id(item.id)
                             .transition(.scale(scale: 0.9).combined(with: .opacity))
                             .onTapGesture {
                                 model.selection = idx
@@ -175,11 +183,16 @@ struct GalleryView: View {
                            value: model.items)
             }
             .frame(height: 156)
-            .onChange(of: model.selection) { _, newValue in
-                guard !reduceMotion else { proxy.scrollTo(newValue, anchor: .center); return }
-                withAnimation(.easeOut(duration: 0.2)) { proxy.scrollTo(newValue, anchor: .center) }
-            }
+            .onChange(of: model.selection) { _, _ in scrollToSelection(proxy) }
         }
+    }
+
+    private func scrollToSelection(_ proxy: ScrollViewProxy) {
+        let list = model.filtered()
+        guard list.indices.contains(model.selection) else { return }
+        let id = list[model.selection].id
+        if reduceMotion { proxy.scrollTo(id, anchor: .center) }
+        else { withAnimation(.easeOut(duration: 0.2)) { proxy.scrollTo(id, anchor: .center) } }
     }
 
     private func editClosure(for item: ClipItem) -> (() -> Void)? {
@@ -216,23 +229,5 @@ struct GalleryView: View {
         }
         .frame(height: 156)
         .frame(maxWidth: .infinity)
-    }
-
-    // MARK: Keyboard
-
-    private var keyHandlers: some View {
-        ZStack {
-            Button("") { model.moveSelection(1) }.keyboardShortcut(.rightArrow, modifiers: [])
-            Button("") { model.moveSelection(-1) }.keyboardShortcut(.leftArrow, modifiers: [])
-            Button("") { model.pasteSelected() }.keyboardShortcut(.return, modifiers: [])
-            Button("") { model.onDismiss() }.keyboardShortcut(.escape, modifiers: [])
-            Button("") { model.pasteSelected(asPlainText: true) }
-                .keyboardShortcut("v", modifiers: [.command, .option])
-            ForEach(1...9, id: \.self) { n in
-                Button("") { model.pasteIndex(n) }
-                    .keyboardShortcut(KeyEquivalent(Character("\(n)")), modifiers: .command)
-            }
-        }
-        .opacity(0).frame(width: 0, height: 0)
     }
 }

@@ -12,6 +12,7 @@ final class AppEnvironment: ObservableObject {
     private(set) var panel: GalleryPanel!
     private(set) var vm: GalleryViewModel!
     private var pruneTimer: Timer?
+    private var keyMonitor: Any?
 
     @Published var isPaused = false
 
@@ -28,10 +29,11 @@ final class AppEnvironment: ObservableObject {
         }
         self.panel = panel
 
-        vm.onDismiss = { [weak self] in self?.panel.hide() }
+        panel.onResign = { [weak self] in self?.hideGallery() }
+        vm.onDismiss = { [weak self] in self?.hideGallery() }
         vm.onPaste = { [weak self] item, plain in
             guard let self else { return }
-            self.panel.hide()                       // restores previous app focus
+            self.hideGallery()                      // restores previous app focus
             self.paste.write(item, asPlainText: plain)
             // Give the target app a beat to become active, then paste.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
@@ -53,8 +55,9 @@ final class AppEnvironment: ObservableObject {
         monitor.isPaused = isPaused
         monitor.start(interval: 0.3)
 
-        hotkey.onTrigger = { [weak self] in self?.openGallery() }
+        hotkey.onTrigger = { [weak self] in self?.toggleGallery() }
         hotkey.register()
+        installKeyMonitor()
 
         startPruneTimer()
 
@@ -63,9 +66,45 @@ final class AppEnvironment: ObservableObject {
         }
     }
 
+    func toggleGallery() {
+        panel.isVisible ? hideGallery() : openGallery()
+    }
+
     func openGallery() {
         panel.show()                    // show instantly, no delay
         Task { await vm.reload() }       // populate (cards animate in)
+    }
+
+    func hideGallery() {
+        panel.hide()
+    }
+
+    /// Intercept navigation keys before the focused search field swallows them.
+    private func installKeyMonitor() {
+        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self, self.panel.isVisible, !self.panel.hasSheet else { return event }
+            let mods = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+
+            // ⌘1–9 → paste that card
+            if mods == .command, let s = event.charactersIgnoringModifiers,
+               let n = Int(s), (1...9).contains(n) {
+                self.vm.pasteIndex(n); return nil
+            }
+            // ⌘⌥V → paste as plain text
+            if mods == [.command, .option],
+               event.charactersIgnoringModifiers?.lowercased() == "v" {
+                self.vm.pasteSelected(asPlainText: true); return nil
+            }
+            guard mods.isEmpty else { return event }
+
+            switch event.keyCode {
+            case 123, 126: self.vm.moveSelection(-1); return nil   // left / up
+            case 124, 125: self.vm.moveSelection(1); return nil    // right / down
+            case 36, 76:   self.vm.pasteSelected(); return nil     // return / enter
+            case 53:       self.hideGallery(); return nil          // esc
+            default:       return event                             // typing → search
+            }
+        }
     }
 
     func togglePause() {
