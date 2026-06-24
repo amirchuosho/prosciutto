@@ -12,6 +12,7 @@ final class Preferences {
         static let blocked = "exclusion.blockedBundleIDs"
         static let soundEnabled = "capture.soundEnabled"
         static let soundName = "capture.soundName"
+        static let pasteAutomatically = "paste.automatically"
         static let appearance = "theme.appearance"
         static let accentTheme = "theme.accent"
         static let customAccentHex = "theme.customAccentHex"
@@ -40,6 +41,13 @@ final class Preferences {
     var captureSoundName: String {
         get { defaults.string(forKey: Keys.soundName) ?? "Pop" }
         set { defaults.set(newValue, forKey: Keys.soundName) }
+    }
+
+    /// true: selecting an item pastes it immediately. false: it's loaded onto
+    /// the clipboard so the next ⌘V pastes it.
+    var pasteAutomatically: Bool {
+        get { defaults.object(forKey: Keys.pasteAutomatically) as? Bool ?? true }
+        set { defaults.set(newValue, forKey: Keys.pasteAutomatically) }
     }
 
     var maxItems: Int {

@@ -29,7 +29,7 @@ struct ClipCard: View {
                 .clipped()
             footer
         }
-        .frame(width: 222, height: 246)
+        .frame(width: 226, height: 252)
         .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.regularMaterial))
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(border)
@@ -38,17 +38,17 @@ struct ClipCard: View {
                 actionBar.transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .shadow(color: isSelected ? accent.opacity(0.45) : .black.opacity(0.28),
-                radius: isSelected ? 18 : 9, y: isSelected ? 8 : 4)
-        .scaleEffect(isSelected ? 1.045 : (hovering ? 1.015 : 0.98))
-        .offset(y: isSelected ? -6 : 0)
-        .animation(reduceMotion ? nil : .spring(response: 0.26, dampingFraction: 0.82), value: isSelected)
-        .animation(reduceMotion ? nil : .easeOut(duration: 0.14), value: hovering)
+        .shadow(color: .black.opacity(0.3), radius: 7, y: 4)
+        .shadow(color: isSelected ? accent.opacity(0.5) : .clear, radius: 14, y: 0)
+        .scaleEffect(isSelected ? 1.05 : (hovering ? 1.02 : 1.0))
+        .zIndex(isSelected ? 1 : 0)
+        .animation(reduceMotion ? nil : .spring(response: 0.22, dampingFraction: 0.86), value: isSelected)
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.13), value: hovering)
         .onHover { hovering = $0 }
     }
 
     private var bodyTint: some View {
-        LinearGradient(colors: [style.color.opacity(0.22), style.color.opacity(0.06)],
+        LinearGradient(colors: [style.color.opacity(0.34), style.color.opacity(0.10)],
                        startPoint: .top, endPoint: .bottom)
     }
 
@@ -57,14 +57,14 @@ struct ClipCard: View {
     private var header: some View {
         HStack(spacing: 5) {
             Image(systemName: style.icon).font(.system(size: 11, weight: .heavy))
-            Text(style.label).font(.system(size: 11, weight: .heavy)).tracking(0.7)
+            Text(style.label).font(.system(size: 11, weight: .heavy, design: .rounded)).tracking(0.8)
             Spacer(minLength: 4)
             if item.isPinned {
                 Image(systemName: "pin.fill").font(.system(size: 10))
                     .rotationEffect(.degrees(pinPulse ? -18 : 0))
                     .scaleEffect(pinPulse ? 1.35 : 1)
             }
-            Text(relativeTime).font(.system(size: 10, weight: .semibold))
+            Text(relativeTime).font(.system(size: 10, weight: .semibold, design: .rounded))
         }
         .foregroundStyle(.white)
         .padding(.horizontal, 11).padding(.vertical, 8)

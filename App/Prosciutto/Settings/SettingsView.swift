@@ -7,6 +7,7 @@ struct SettingsView: View {
     @State private var maxAgeDays = Preferences.shared.maxAgeDays
     @State private var soundEnabled = Preferences.shared.captureSoundEnabled
     @State private var soundName = Preferences.shared.captureSoundName
+    @State private var pasteAutomatically = Preferences.shared.pasteAutomatically
 
     private let systemSounds = ["Pop", "Tink", "Glass", "Bottle", "Frog", "Submarine", "Morse"]
 
@@ -23,6 +24,14 @@ struct SettingsView: View {
 
     private var general: some View {
         Form {
+            Section("Behavior") {
+                Toggle("Paste automatically on select", isOn: $pasteAutomatically)
+                    .onChange(of: pasteAutomatically) { _, v in Preferences.shared.pasteAutomatically = v }
+                Text(pasteAutomatically
+                     ? "Selecting an item pastes it into the active app right away."
+                     : "Selecting an item loads it onto the clipboard; press ⌘V to paste.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
             Section("History") {
                 Stepper("Keep up to \(maxItems) items", value: $maxItems, in: 100...10_000, step: 100)
                     .onChange(of: maxItems) { _, v in Preferences.shared.maxItems = v }

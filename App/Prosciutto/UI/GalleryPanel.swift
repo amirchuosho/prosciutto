@@ -50,18 +50,16 @@ final class GalleryPanel: NSObject {
     private func targetFrame() -> NSRect? {
         guard let screen = NSScreen.main else { return nil }
         let margin: CGFloat = 18
-        let height: CGFloat = 410
+        let height: CGFloat = 424
         let v = screen.visibleFrame
         return NSRect(x: v.minX + margin, y: v.minY + margin,
                       width: v.width - margin * 2, height: height)
     }
 
-    /// A small frame near the top-right (menu bar) for the minimize/expand effect.
-    private func minimizedFrame(from full: NSRect) -> NSRect {
-        guard let screen = NSScreen.main else { return full }
-        let v = screen.visibleFrame
-        let w = full.width * 0.22, h = full.height * 0.22
-        return NSRect(x: v.maxX - w - 12, y: v.maxY - h - 6, width: w, height: h)
+    /// Off-screen below the bottom edge — the panel slides up from / down to here.
+    private func belowFrame(from full: NSRect) -> NSRect {
+        NSRect(x: full.minX, y: full.minY - full.height - 40,
+               width: full.width, height: full.height)
     }
 
     private var reduceMotion: Bool {
@@ -81,36 +79,34 @@ final class GalleryPanel: NSObject {
         }
 
         panel.alphaValue = 0
-        panel.setFrame(minimizedFrame(from: full), display: false)
+        panel.setFrame(belowFrame(from: full), display: false)
         panel.makeKeyAndOrderFront(nil)
         NSAnimationContext.runAnimationGroup { ctx in
-            ctx.duration = 0.24
-            ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            ctx.duration = 0.28
+            ctx.timingFunction = CAMediaTimingFunction(controlPoints: 0.16, 1, 0.3, 1) // ease-out-expo-ish
             panel.animator().setFrame(full, display: true)
             panel.animator().alphaValue = 1
         }
     }
 
-    /// Minimize toward the menu bar, then hide and return focus to the prior app.
-    func hide() {
-        guard panel.isVisible else { return }
-        if reduceMotion {
-            panel.orderOut(nil)
-            panel.alphaValue = 1
-            previousApp?.activate()
-            return
-        }
-        let mini = minimizedFrame(from: panel.frame)
-        NSAnimationContext.runAnimationGroup { ctx in
-            ctx.duration = 0.2
-            ctx.timingFunction = CAMediaTimingFunction(name: .easeIn)
-            panel.animator().setFrame(mini, display: true)
-            panel.animator().alphaValue = 0
-        } completionHandler: { [weak self] in
+    /// Slide down off the bottom edge, then hide and return focus to the prior app.
+    /// `completion` runs after the panel is fully hidden and focus restored.
+    func hide(completion: (() -> Void)? = nil) {
+        guard panel.isVisible else { completion?(); return }
+        let finish: () -> Void = { [weak self] in
             guard let self else { return }
             self.panel.orderOut(nil)
             self.panel.alphaValue = 1
             self.previousApp?.activate()
+            completion?()
         }
+        if reduceMotion { finish(); return }
+        let below = belowFrame(from: panel.frame)
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = 0.2
+            ctx.timingFunction = CAMediaTimingFunction(name: .easeIn)
+            panel.animator().setFrame(below, display: true)
+            panel.animator().alphaValue = 0
+        } completionHandler: { finish() }
     }
 }

@@ -170,6 +170,17 @@ struct GalleryView: View {
             TextField("Search clipboard…", text: $model.query.text)
                 .textFieldStyle(.plain)
                 .focused($searchFocused)
+            if !model.query.text.isEmpty {
+                Button {
+                    model.query.text = ""
+                    searchFocused = true
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .transition(.opacity)
+            }
         }
         .padding(.horizontal, 14).padding(.vertical, 9)
         .background(.regularMaterial, in: Capsule())
@@ -225,7 +236,7 @@ struct GalleryView: View {
                 .animation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.82),
                            value: model.items)
             }
-            .frame(height: 286)
+            .frame(height: 300)
             .onChange(of: model.selection) { _, _ in scrollToSelection(proxy) }
         }
     }

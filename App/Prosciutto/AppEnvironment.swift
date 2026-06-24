@@ -33,11 +33,15 @@ final class AppEnvironment: ObservableObject {
         vm.onDismiss = { [weak self] in self?.hideGallery() }
         vm.onPaste = { [weak self] item, plain in
             guard let self else { return }
-            self.hideGallery()                      // restores previous app focus
-            self.paste.write(item, asPlainText: plain)
-            // Give the target app a beat to become active, then paste.
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
-                self.paste.synthesizePaste()
+            self.paste.write(item, asPlainText: plain)       // always put it on the clipboard
+            let auto = Preferences.shared.pasteAutomatically
+            // Hide first; only synthesize ⌘V AFTER the panel is gone and the
+            // previous app is active, so the keystroke never lands in our search.
+            self.panel.hide {
+                guard auto else { return }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.07) {
+                    self.paste.synthesizePaste()
+                }
             }
         }
 
