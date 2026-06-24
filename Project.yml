@@ -24,3 +24,23 @@ targets:
         CODE_SIGN_IDENTITY: "-"
         CODE_SIGNING_REQUIRED: NO
         CODE_SIGNING_ALLOWED: NO
+  ProsciuttoTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources: [App/ProsciuttoTests]
+    dependencies:
+      - target: Prosciutto
+      - package: ProsciuttoKit
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGNING_ALLOWED: NO
+schemes:
+  Prosciutto:
+    build:
+      targets:
+        Prosciutto: all
+        ProsciuttoTests: [test]
+    test:
+      targets:
+        - ProsciuttoTests

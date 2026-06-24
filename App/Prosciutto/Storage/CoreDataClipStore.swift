@@ -1,0 +1,106 @@
+import CoreData
+import ProsciuttoKit
+
+final class CoreDataClipStore: ClipStore {
+    private let stack: CoreDataStack
+
+    init(inMemory: Bool = false) {
+        stack = CoreDataStack(inMemory: inMemory)
+    }
+
+    func upsert(_ item: ClipItem) async throws {
+        try await perform { ctx in
+            let req = CDClipItem.fetchRequest()
+            req.predicate = NSPredicate(format: "contentHash == %@", item.contentHash)
+            req.fetchLimit = 1
+            if let existing = try ctx.fetch(req).first {
+                existing.lastUsedAt = item.createdAt
+                existing.useCount += 1
+            } else {
+                let cd = CDClipItem(context: ctx)
+                Self.write(item, into: cd)
+            }
+            try ctx.save()
+        }
+    }
+
+    func all() async throws -> [ClipItem] {
+        try await perform { ctx in
+            let req = CDClipItem.fetchRequest()
+            req.sortDescriptors = [NSSortDescriptor(key: "lastUsedAt", ascending: false)]
+            return try ctx.fetch(req).map(Self.read)
+        }
+    }
+
+    func delete(id: UUID) async throws {
+        try await perform { ctx in
+            let req = CDClipItem.fetchRequest()
+            req.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+            req.fetchLimit = 1
+            if let cd = try ctx.fetch(req).first { ctx.delete(cd) }
+            try ctx.save()
+        }
+    }
+
+    func setPinned(id: UUID, _ pinned: Bool) async throws {
+        try await perform { ctx in
+            let req = CDClipItem.fetchRequest()
+            req.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+            req.fetchLimit = 1
+            if let cd = try ctx.fetch(req).first {
+                cd.isPinned = pinned
+                if pinned { cd.expiresAt = nil }
+            }
+            try ctx.save()
+        }
+    }
+
+    func prune(keeping policy: RetentionPolicy, now: Date) async throws {
+        try await perform { ctx in
+            let all = try ctx.fetch(CDClipItem.fetchRequest())
+            let survivors = Set(policy.survivors(of: all.map(Self.read), now: now).map(\.id))
+            for cd in all where !survivors.contains(cd.id ?? UUID()) { ctx.delete(cd) }
+            try ctx.save()
+        }
+    }
+
+    private func perform<T>(_ block: @escaping (NSManagedObjectContext) throws -> T) async throws -> T {
+        let ctx = stack.container.newBackgroundContext()
+        return try await ctx.perform { try block(ctx) }
+    }
+
+    private static func write(_ i: ClipItem, into cd: CDClipItem) {
+        cd.id = i.id
+        cd.createdAt = i.createdAt
+        cd.lastUsedAt = i.lastUsedAt
+        cd.useCount = Int64(i.useCount)
+        cd.kind = i.kind.rawValue
+        cd.textPlain = i.textPlain
+        cd.rtfData = i.rtfData
+        cd.htmlString = i.htmlString
+        cd.imageData = i.imageData
+        cd.sourceAppBundleID = i.sourceAppBundleID
+        cd.sourceAppName = i.sourceAppName
+        cd.contentHash = i.contentHash
+        cd.isPinned = i.isPinned
+        cd.expiresAt = i.expiresAt
+    }
+
+    private static func read(_ cd: CDClipItem) -> ClipItem {
+        ClipItem(
+            id: cd.id ?? UUID(),
+            createdAt: cd.createdAt ?? Date(),
+            lastUsedAt: cd.lastUsedAt ?? Date(),
+            useCount: Int(cd.useCount),
+            kind: ClipKind(rawValue: cd.kind ?? "text") ?? .text,
+            textPlain: cd.textPlain,
+            rtfData: cd.rtfData,
+            htmlString: cd.htmlString,
+            imageData: cd.imageData,
+            sourceAppBundleID: cd.sourceAppBundleID,
+            sourceAppName: cd.sourceAppName,
+            contentHash: cd.contentHash ?? "",
+            isPinned: cd.isPinned,
+            expiresAt: cd.expiresAt)
+    }
+}
