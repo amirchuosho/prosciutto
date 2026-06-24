@@ -9,12 +9,11 @@ final class GalleryViewModel: ObservableObject {
 
     private let store: ClipStore
     private let paste: PasteService
-    private let onPasted: () -> Void
+    var onPasted: () -> Void = {}
 
-    init(store: ClipStore, paste: PasteService, onPasted: @escaping () -> Void) {
+    init(store: ClipStore, paste: PasteService) {
         self.store = store
         self.paste = paste
-        self.onPasted = onPasted
     }
 
     func reload() async {
