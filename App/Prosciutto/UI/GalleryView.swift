@@ -213,7 +213,7 @@ struct GalleryView: View {
                                  onEdit: editClosure(for: item))
                             .id(item.id)
                             .transition(.scale(scale: 0.9).combined(with: .opacity))
-                            .draggable(item.id.uuidString)
+                            .draggable(item.id.uuidString) { dragPreview(item) }
                             .onTapGesture {
                                 model.selection = idx
                                 model.pasteSelected()
@@ -221,13 +221,26 @@ struct GalleryView: View {
                             .contextMenu { cardMenu(item) }
                     }
                 }
-                .padding(.horizontal, 6).padding(.vertical, 8)
-                .animation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.8),
+                .padding(.horizontal, 18).padding(.vertical, 18)
+                .animation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.82),
                            value: model.items)
             }
-            .frame(height: 236)
+            .frame(height: 286)
             .onChange(of: model.selection) { _, _ in scrollToSelection(proxy) }
         }
+    }
+
+    /// Compact preview so the dragged tile shrinks and doesn't cover the groups.
+    private func dragPreview(_ item: ClipItem) -> some View {
+        let style = KindStyle.of(item.kind)
+        return HStack(spacing: 6) {
+            Image(systemName: style.icon).font(.system(size: 11, weight: .bold))
+            Text(item.textPlain?.prefix(24).description ?? style.label)
+                .font(.system(size: 11, weight: .semibold)).lineLimit(1)
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, 12).padding(.vertical, 8)
+        .background(Capsule().fill(style.color.gradient))
     }
 
     private func scrollToSelection(_ proxy: ScrollViewProxy) {
@@ -235,7 +248,7 @@ struct GalleryView: View {
         guard list.indices.contains(model.selection) else { return }
         let id = list[model.selection].id
         if reduceMotion { proxy.scrollTo(id, anchor: .center) }
-        else { withAnimation(.easeOut(duration: 0.2)) { proxy.scrollTo(id, anchor: .center) } }
+        else { withAnimation(.easeOut(duration: 0.12)) { proxy.scrollTo(id, anchor: .center) } }
     }
 
     private func editClosure(for item: ClipItem) -> (() -> Void)? {

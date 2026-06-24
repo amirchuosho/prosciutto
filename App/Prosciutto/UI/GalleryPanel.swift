@@ -47,24 +47,70 @@ final class GalleryPanel: NSObject {
     var hasSheet: Bool { panel.attachedSheet != nil }
     var isVisible: Bool { panel.isVisible }
 
-    func show() {
-        guard let screen = NSScreen.main else { return }
-        previousApp = NSWorkspace.shared.frontmostApplication
+    private func targetFrame() -> NSRect? {
+        guard let screen = NSScreen.main else { return nil }
         let margin: CGFloat = 18
-        let height: CGFloat = 364
-        let visible = screen.visibleFrame
-        panel.setFrame(NSRect(x: visible.minX + margin,
-                              y: visible.minY + margin,
-                              width: visible.width - margin * 2,
-                              height: height),
-                       display: true)
-        NSApp.activate(ignoringOtherApps: true)
-        panel.makeKeyAndOrderFront(nil)
+        let height: CGFloat = 410
+        let v = screen.visibleFrame
+        return NSRect(x: v.minX + margin, y: v.minY + margin,
+                      width: v.width - margin * 2, height: height)
     }
 
-    /// Hide and return focus to the app the user was in.
+    /// A small frame near the top-right (menu bar) for the minimize/expand effect.
+    private func minimizedFrame(from full: NSRect) -> NSRect {
+        guard let screen = NSScreen.main else { return full }
+        let v = screen.visibleFrame
+        let w = full.width * 0.22, h = full.height * 0.22
+        return NSRect(x: v.maxX - w - 12, y: v.maxY - h - 6, width: w, height: h)
+    }
+
+    private var reduceMotion: Bool {
+        NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+    }
+
+    func show() {
+        guard let full = targetFrame() else { return }
+        previousApp = NSWorkspace.shared.frontmostApplication
+        NSApp.activate(ignoringOtherApps: true)
+
+        if reduceMotion {
+            panel.alphaValue = 1
+            panel.setFrame(full, display: true)
+            panel.makeKeyAndOrderFront(nil)
+            return
+        }
+
+        panel.alphaValue = 0
+        panel.setFrame(minimizedFrame(from: full), display: false)
+        panel.makeKeyAndOrderFront(nil)
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = 0.24
+            ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            panel.animator().setFrame(full, display: true)
+            panel.animator().alphaValue = 1
+        }
+    }
+
+    /// Minimize toward the menu bar, then hide and return focus to the prior app.
     func hide() {
-        panel.orderOut(nil)
-        previousApp?.activate()
+        guard panel.isVisible else { return }
+        if reduceMotion {
+            panel.orderOut(nil)
+            panel.alphaValue = 1
+            previousApp?.activate()
+            return
+        }
+        let mini = minimizedFrame(from: panel.frame)
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = 0.2
+            ctx.timingFunction = CAMediaTimingFunction(name: .easeIn)
+            panel.animator().setFrame(mini, display: true)
+            panel.animator().alphaValue = 0
+        } completionHandler: { [weak self] in
+            guard let self else { return }
+            self.panel.orderOut(nil)
+            self.panel.alphaValue = 1
+            self.previousApp?.activate()
+        }
     }
 }

@@ -25,43 +25,49 @@ struct ClipCard: View {
             header
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .background(bodyTint)
                 .clipped()
             footer
         }
-        .frame(width: 196, height: 212)
-        .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(.regularMaterial))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .frame(width: 222, height: 246)
+        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.regularMaterial))
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(border)
         .overlay(alignment: .bottom) {
             if showActions {
                 actionBar.transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .shadow(color: isSelected ? accent.opacity(0.4) : .black.opacity(0.28),
-                radius: isSelected ? 16 : 8, y: isSelected ? 7 : 4)
-        .scaleEffect(isSelected ? 1.04 : (hovering ? 1.015 : 0.98))
+        .shadow(color: isSelected ? accent.opacity(0.45) : .black.opacity(0.28),
+                radius: isSelected ? 18 : 9, y: isSelected ? 8 : 4)
+        .scaleEffect(isSelected ? 1.045 : (hovering ? 1.015 : 0.98))
         .offset(y: isSelected ? -6 : 0)
-        .animation(reduceMotion ? nil : .spring(response: 0.32, dampingFraction: 0.7), value: isSelected)
-        .animation(reduceMotion ? nil : .easeOut(duration: 0.15), value: hovering)
+        .animation(reduceMotion ? nil : .spring(response: 0.26, dampingFraction: 0.82), value: isSelected)
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.14), value: hovering)
         .onHover { hovering = $0 }
+    }
+
+    private var bodyTint: some View {
+        LinearGradient(colors: [style.color.opacity(0.22), style.color.opacity(0.06)],
+                       startPoint: .top, endPoint: .bottom)
     }
 
     // MARK: Header band
 
     private var header: some View {
         HStack(spacing: 5) {
-            Image(systemName: style.icon).font(.system(size: 10, weight: .heavy))
-            Text(style.label).font(.system(size: 10, weight: .heavy)).tracking(0.6)
+            Image(systemName: style.icon).font(.system(size: 11, weight: .heavy))
+            Text(style.label).font(.system(size: 11, weight: .heavy)).tracking(0.7)
             Spacer(minLength: 4)
             if item.isPinned {
-                Image(systemName: "pin.fill").font(.system(size: 9))
+                Image(systemName: "pin.fill").font(.system(size: 10))
                     .rotationEffect(.degrees(pinPulse ? -18 : 0))
                     .scaleEffect(pinPulse ? 1.35 : 1)
             }
-            Text(relativeTime).font(.system(size: 9, weight: .semibold))
+            Text(relativeTime).font(.system(size: 10, weight: .semibold))
         }
         .foregroundStyle(.white)
-        .padding(.horizontal, 10).padding(.vertical, 7)
+        .padding(.horizontal, 11).padding(.vertical, 8)
         .background(
             LinearGradient(colors: [style.color, style.color.opacity(0.82)],
                            startPoint: .leading, endPoint: .trailing)
