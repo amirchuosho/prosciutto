@@ -83,20 +83,23 @@ final class AppEnvironment: ObservableObject {
     private func installKeyMonitor() {
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self, self.panel.isVisible, !self.panel.hasSheet else { return event }
-            let mods = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+            let mods = event.modifierFlags.intersection([.command, .option, .control, .shift])
 
-            // ⌘1–9 → paste that card
-            if mods == .command, let s = event.charactersIgnoringModifiers,
-               let n = Int(s), (1...9).contains(n) {
-                self.vm.pasteIndex(n); return nil
+            // ⌘ combinations first
+            if mods.contains(.command) {
+                if mods == .command, let s = event.charactersIgnoringModifiers,
+                   let n = Int(s), (1...9).contains(n) {
+                    self.vm.pasteIndex(n); return nil               // ⌘1–9 paste
+                }
+                if mods == [.command, .option],
+                   event.charactersIgnoringModifiers?.lowercased() == "v" {
+                    self.vm.pasteSelected(asPlainText: true); return nil  // ⌘⌥V plain paste
+                }
+                return event
             }
-            // ⌘⌥V → paste as plain text
-            if mods == [.command, .option],
-               event.charactersIgnoringModifiers?.lowercased() == "v" {
-                self.vm.pasteSelected(asPlainText: true); return nil
-            }
-            guard mods.isEmpty else { return event }
 
+            // Navigation keys. Arrow keys carry .function/.numericPad flags, so
+            // match on keyCode and ignore non-command modifiers here.
             switch event.keyCode {
             case 123, 126: self.vm.moveSelection(-1); return nil   // left / up
             case 124, 125: self.vm.moveSelection(1); return nil    // right / down

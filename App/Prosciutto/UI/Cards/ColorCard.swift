@@ -10,10 +10,10 @@ struct ColorCard: View {
             (Color(hex: hex) ?? .gray)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             Text(hex.uppercased())
-                .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                .padding(6)
-                .frame(maxWidth: .infinity)
-                .background(.thinMaterial)
+                .font(.system(size: 13, weight: .bold, design: .monospaced))
+                .foregroundStyle(.white)
+                .padding(.vertical, 6).frame(maxWidth: .infinity)
+                .background(.black.opacity(0.35))
         }
     }
 }

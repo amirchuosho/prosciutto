@@ -6,32 +6,32 @@ struct LinkCard: View {
     private var url: URL? { item.textPlain.flatMap { URL(string: $0) } }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            HStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 7) {
                 favicon
                 Text(url?.host ?? "Link")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: 13, weight: .semibold))
                     .lineLimit(1)
             }
             Text(item.textPlain ?? "")
-                .font(.system(size: 10))
+                .font(.system(size: 10.5))
                 .foregroundStyle(.secondary)
-                .lineLimit(2)
+                .lineLimit(3)
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .padding(EdgeInsets(top: 30, leading: 11, bottom: 10, trailing: 11))
+        .padding(11)
     }
 
     @ViewBuilder private var favicon: some View {
         if let host = url?.host, let faviconURL = URL(string: "https://\(host)/favicon.ico") {
             AsyncImage(url: faviconURL) { image in
-                image.resizable().frame(width: 16, height: 16).clipShape(RoundedRectangle(cornerRadius: 3))
+                image.resizable().frame(width: 18, height: 18).clipShape(RoundedRectangle(cornerRadius: 4))
             } placeholder: {
-                Image(systemName: "link").font(.caption)
+                Image(systemName: "link").font(.system(size: 13))
             }
         } else {
-            Image(systemName: "link").font(.caption)
+            Image(systemName: "link").font(.system(size: 13))
         }
     }
 }

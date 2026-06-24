@@ -83,6 +83,20 @@ final class GalleryViewModel: ObservableObject {
         await reload()
     }
 
+    func assignID(_ itemID: UUID, to sectionID: UUID?) async {
+        try? await store.assign(itemID: itemID, to: sectionID)
+        await reload()
+    }
+
+    func updateSection(_ section: ClipSection, name: String, hex: String) async {
+        var updated = section
+        let trimmed = name.trimmingCharacters(in: .whitespaces)
+        if !trimmed.isEmpty { updated.name = trimmed }
+        updated.colorHex = hex
+        try? await store.updateSection(updated)
+        await reload()
+    }
+
     func moveSelection(_ delta: Int) {
         let count = filtered().count
         guard count > 0 else { return }

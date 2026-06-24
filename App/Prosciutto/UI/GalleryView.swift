@@ -7,6 +7,7 @@ struct GalleryView: View {
     @FocusState private var searchFocused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var editingItem: ClipItem?
+    @State private var editingSection: ClipSection?
     @State private var showingAddSection = false
     @State private var newSectionName = ""
 
@@ -32,6 +33,13 @@ struct GalleryView: View {
         .sheet(item: $editingItem) { item in
             EditSheet(item: item) { newText in
                 Task { await model.updateText(item, newText: newText) }
+            }
+            .tint(theme.accent)
+            .preferredColorScheme(theme.colorScheme)
+        }
+        .sheet(item: $editingSection) { section in
+            EditSectionSheet(section: section, palette: model.sectionColors) { name, hex in
+                Task { await model.updateSection(section, name: name, hex: hex) }
             }
             .tint(theme.accent)
             .preferredColorScheme(theme.colorScheme)
@@ -66,16 +74,13 @@ struct GalleryView: View {
                                 color: color, active: model.sectionFilter == .section(section.id)) {
                         model.sectionFilter = .section(section.id)
                     }
+                    .dropDestination(for: String.self) { ids, _ in
+                        guard let s = ids.first, let uuid = UUID(uuidString: s) else { return false }
+                        Task { await model.assignID(uuid, to: section.id) }
+                        return true
+                    }
                     .contextMenu {
-                        Menu("Color") {
-                            ForEach(model.sectionColors, id: \.self) { hex in
-                                Button {
-                                    Task { await model.recolorSection(section, hex: hex) }
-                                } label: {
-                                    Label(hex, systemImage: section.colorHex == hex ? "checkmark.circle.fill" : "circle.fill")
-                                }
-                            }
-                        }
+                        Button("Edit section…") { editingSection = section }
                         Button("Delete section", role: .destructive) {
                             Task { await model.deleteSection(section) }
                         }
@@ -145,6 +150,16 @@ struct GalleryView: View {
             Text("⌘1–9 · ⏎ · esc")
                 .font(.system(size: 10, weight: .medium, design: .rounded))
                 .foregroundStyle(.tertiary)
+            Button { model.onDismiss() } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 26, height: 26)
+                    .background(Circle().fill(Color.secondary.opacity(0.14)))
+                    .contentShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .help("Close (esc)")
         }
     }
 
@@ -198,6 +213,7 @@ struct GalleryView: View {
                                  onEdit: editClosure(for: item))
                             .id(item.id)
                             .transition(.scale(scale: 0.9).combined(with: .opacity))
+                            .draggable(item.id.uuidString)
                             .onTapGesture {
                                 model.selection = idx
                                 model.pasteSelected()
@@ -209,7 +225,7 @@ struct GalleryView: View {
                 .animation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.8),
                            value: model.items)
             }
-            .frame(height: 176)
+            .frame(height: 236)
             .onChange(of: model.selection) { _, _ in scrollToSelection(proxy) }
         }
     }
@@ -254,7 +270,7 @@ struct GalleryView: View {
             Text(model.query.text.isEmpty ? "Nothing copied yet" : "No matches")
                 .font(.callout).foregroundStyle(.secondary)
         }
-        .frame(height: 176)
+        .frame(height: 236)
         .frame(maxWidth: .infinity)
     }
 }

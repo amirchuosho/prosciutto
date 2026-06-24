@@ -15,82 +15,85 @@ struct ClipCard: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var style: KindStyle { KindStyle.of(item.kind) }
-    private var glow: Color { isSelected ? accent : style.color }
     private var showActions: Bool { hovering || isSelected }
     private var editable: Bool {
         switch item.kind { case .text, .rtf, .code, .link, .color: return true; default: return false }
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) { content }
-            .frame(width: 182, height: 134)
-            .background(cardBackground)
-            .overlay(alignment: .top) { topBar }
-            .overlay(alignment: .bottom) { if showActions { actionBar.transition(.move(edge: .bottom).combined(with: .opacity)) } }
-            .overlay(border)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .shadow(color: glow.opacity(isSelected ? 0.55 : (hovering ? 0.4 : 0.0)),
-                    radius: isSelected ? 18 : 12, y: 4)
-            .shadow(color: .black.opacity(0.3), radius: 5, y: 3)
-            .scaleEffect(isSelected ? 1.05 : (hovering ? 1.02 : 0.97))
-            .offset(y: isSelected ? -4 : 0)
-            .animation(reduceMotion ? nil : .spring(response: 0.32, dampingFraction: 0.68), value: isSelected)
-            .animation(reduceMotion ? nil : .easeOut(duration: 0.16), value: hovering)
-            .onHover { hovering = $0 }
+        VStack(spacing: 0) {
+            header
+            content
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .clipped()
+            footer
+        }
+        .frame(width: 196, height: 212)
+        .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(.regularMaterial))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(border)
+        .overlay(alignment: .bottom) {
+            if showActions {
+                actionBar.transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .shadow(color: isSelected ? accent.opacity(0.4) : .black.opacity(0.28),
+                radius: isSelected ? 16 : 8, y: isSelected ? 7 : 4)
+        .scaleEffect(isSelected ? 1.04 : (hovering ? 1.015 : 0.98))
+        .offset(y: isSelected ? -6 : 0)
+        .animation(reduceMotion ? nil : .spring(response: 0.32, dampingFraction: 0.7), value: isSelected)
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.15), value: hovering)
+        .onHover { hovering = $0 }
     }
 
-    private var cardBackground: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 16, style: .continuous).fill(.ultraThinMaterial)
-            LinearGradient(colors: [style.color.opacity(isSelected ? 0.38 : 0.24),
-                                    style.color.opacity(0.05)],
-                           startPoint: .topLeading, endPoint: .bottomTrailing)
-            // top sheen
-            LinearGradient(colors: [.white.opacity(0.10), .clear],
-                           startPoint: .top, endPoint: .center)
+    // MARK: Header band
+
+    private var header: some View {
+        HStack(spacing: 5) {
+            Image(systemName: style.icon).font(.system(size: 10, weight: .heavy))
+            Text(style.label).font(.system(size: 10, weight: .heavy)).tracking(0.6)
+            Spacer(minLength: 4)
+            if item.isPinned {
+                Image(systemName: "pin.fill").font(.system(size: 9))
+                    .rotationEffect(.degrees(pinPulse ? -18 : 0))
+                    .scaleEffect(pinPulse ? 1.35 : 1)
+            }
+            Text(relativeTime).font(.system(size: 9, weight: .semibold))
         }
+        .foregroundStyle(.white)
+        .padding(.horizontal, 10).padding(.vertical, 7)
+        .background(
+            LinearGradient(colors: [style.color, style.color.opacity(0.82)],
+                           startPoint: .leading, endPoint: .trailing)
+        )
+    }
+
+    // MARK: Footer
+
+    private var footer: some View {
+        HStack(spacing: 5) {
+            Text(meta).font(.system(size: 9, weight: .medium)).foregroundStyle(.secondary)
+                .lineLimit(1)
+            Spacer(minLength: 4)
+            if let index, index <= 9 {
+                Text("⌘\(index)")
+                    .font(.system(size: 9, weight: .bold, design: .rounded))
+                    .foregroundStyle(isSelected ? .white : .secondary)
+                    .padding(.horizontal, 5).padding(.vertical, 1.5)
+                    .background(Capsule().fill(isSelected ? accent : Color.secondary.opacity(0.22)))
+            }
+        }
+        .padding(.horizontal, 10).padding(.vertical, 6)
+        .background(.thinMaterial)
     }
 
     private var border: some View {
         RoundedRectangle(cornerRadius: 16, style: .continuous)
-            .strokeBorder(
-                LinearGradient(colors: [glow.opacity(isSelected ? 0.95 : 0.4),
-                                        glow.opacity(isSelected ? 0.5 : 0.12)],
-                               startPoint: .top, endPoint: .bottom),
-                lineWidth: isSelected ? 2.5 : 1.2)
+            .strokeBorder(isSelected ? accent : style.color.opacity(0.35),
+                          lineWidth: isSelected ? 2.5 : 1)
     }
 
-    private var topBar: some View {
-        HStack {
-            HStack(spacing: 4) {
-                Image(systemName: style.icon).font(.system(size: 9, weight: .heavy))
-                Text(style.label).font(.system(size: 9, weight: .heavy)).tracking(0.5)
-            }
-            .foregroundStyle(.white)
-            .padding(.horizontal, 7).padding(.vertical, 3.5)
-            .background(
-                Capsule().fill(style.color.gradient)
-                    .shadow(color: style.color.opacity(0.6), radius: 4, y: 1)
-            )
-
-            Spacer()
-
-            if item.isPinned {
-                Image(systemName: "pin.fill").font(.system(size: 10))
-                    .foregroundStyle(accent)
-                    .rotationEffect(.degrees(pinPulse ? -12 : 0))
-                    .scaleEffect(pinPulse ? 1.3 : 1.0)
-            }
-            if let index, index <= 9 {
-                Text("⌘\(index)")
-                    .font(.system(size: 10, weight: .bold, design: .rounded))
-                    .foregroundStyle(isSelected ? .white : .secondary)
-                    .padding(.horizontal, 5).padding(.vertical, 2)
-                    .background(Capsule().fill(isSelected ? accent : Color.secondary.opacity(0.25)))
-            }
-        }
-        .padding(8)
-    }
+    // MARK: Actions
 
     private var actionBar: some View {
         HStack(spacing: 6) {
@@ -106,15 +109,13 @@ struct ClipCard: View {
             actionButton("trash.fill", tint: .red, action: onDelete)
         }
         .padding(.horizontal, 8).padding(.vertical, 7)
-        .background(
-            LinearGradient(colors: [.black.opacity(0.55), .clear], startPoint: .bottom, endPoint: .top)
-        )
+        .background(LinearGradient(colors: [.black.opacity(0.6), .clear],
+                                   startPoint: .bottom, endPoint: .top))
     }
 
     private func actionButton(_ icon: String, tint: Color, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(systemName: icon)
-                .font(.system(size: 11, weight: .bold))
+            Image(systemName: icon).font(.system(size: 11, weight: .bold))
                 .foregroundStyle(tint)
                 .frame(width: 26, height: 26)
                 .background(Circle().fill(.ultraThinMaterial))
@@ -122,6 +123,8 @@ struct ClipCard: View {
         }
         .buttonStyle(.plain)
     }
+
+    // MARK: Content + meta
 
     @ViewBuilder private var content: some View {
         switch item.kind {
@@ -131,6 +134,28 @@ struct ClipCard: View {
         case .code:  CodeCard(item: item)
         case .file:  FileCard(item: item)
         case .text, .rtf: TextCard(item: item)
+        }
+    }
+
+    private var relativeTime: String {
+        let f = RelativeDateTimeFormatter()
+        f.unitsStyle = .abbreviated
+        return f.localizedString(for: item.lastUsedAt, relativeTo: Date())
+    }
+
+    private var meta: String {
+        switch item.kind {
+        case .text, .rtf, .code:
+            let n = item.textPlain?.count ?? 0
+            return "\(n) chars" + (item.sourceAppName.map { " · \($0)" } ?? "")
+        case .link:
+            return URL(string: item.textPlain ?? "")?.host ?? "Link"
+        case .image:
+            return ByteCountFormatter.string(fromByteCount: Int64(item.imageData?.count ?? 0), countStyle: .file)
+        case .color:
+            return item.textPlain ?? "Color"
+        case .file:
+            return item.sourceAppName ?? "File"
         }
     }
 }
