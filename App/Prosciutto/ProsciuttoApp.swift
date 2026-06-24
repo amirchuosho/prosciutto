@@ -5,20 +5,33 @@ struct ProsciuttoApp: App {
     @StateObject private var env = AppEnvironment()
 
     var body: some Scene {
-        MenuBarExtra("Prosciutto", systemImage: "rectangle.stack") {
-            Button("Open Prosciutto") { env.openGallery() }
-                .keyboardShortcut("v", modifiers: [.command, .shift])
-            Divider()
-            Button(env.isPaused ? "Resume Capture" : "Pause Capture") { env.togglePause() }
-            SettingsLink { Text("Settings…") }
-                .keyboardShortcut(",", modifiers: .command)
-            Divider()
-            Button("Quit Prosciutto") { NSApplication.shared.terminate(nil) }
-                .keyboardShortcut("q")
+        MenuBarExtra("Prosciutto", systemImage: "rectangle.stack.fill") {
+            MenuContent(env: env)
         }
 
         Settings {
             SettingsView()
+                .environmentObject(env.theme)
         }
+    }
+}
+
+private struct MenuContent: View {
+    @ObservedObject var env: AppEnvironment
+    @Environment(\.openSettings) private var openSettings
+
+    var body: some View {
+        Button("Open Prosciutto") { env.openGallery() }
+            .keyboardShortcut("v", modifiers: [.command, .shift])
+        Divider()
+        Button(env.isPaused ? "Resume Capture" : "Pause Capture") { env.togglePause() }
+        Button("Settings…") {
+            NSApp.activate(ignoringOtherApps: true)
+            openSettings()
+        }
+        .keyboardShortcut(",", modifiers: .command)
+        Divider()
+        Button("Quit Prosciutto") { NSApplication.shared.terminate(nil) }
+            .keyboardShortcut("q")
     }
 }

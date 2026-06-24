@@ -3,18 +3,20 @@ import ProsciuttoKit
 
 struct GalleryView: View {
     @ObservedObject var model: GalleryViewModel
-    let onDismiss: () -> Void
+    @EnvironmentObject var theme: ThemeManager
     @FocusState private var searchFocused: Bool
 
     private let kinds: [ClipKind] = [.text, .link, .image, .color, .code, .file]
 
     var body: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 12) {
             header
             cards
         }
-        .padding(14)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18))
+        .padding(16)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20))
+        .tint(theme.accent)
+        .preferredColorScheme(theme.colorScheme)
         .onAppear { searchFocused = true }
     }
 
@@ -45,7 +47,7 @@ struct GalleryView: View {
             Text(kind.rawValue.capitalized)
                 .font(.caption2)
                 .padding(.horizontal, 8).padding(.vertical, 4)
-                .background(on ? Color.accentColor.opacity(0.25) : Color.secondary.opacity(0.12),
+                .background(on ? theme.accent.opacity(0.25) : Color.secondary.opacity(0.12),
                             in: Capsule())
         }
         .buttonStyle(.plain)
@@ -67,7 +69,7 @@ struct GalleryView: View {
                 }
                 .padding(.horizontal, 4)
             }
-            .frame(height: 140)
+            .frame(height: 150)
             .onChange(of: model.selection) { _, newValue in
                 withAnimation { proxy.scrollTo(newValue, anchor: .center) }
             }
@@ -80,7 +82,7 @@ struct GalleryView: View {
             Button("") { model.moveSelection(1) }.keyboardShortcut(.rightArrow, modifiers: [])
             Button("") { model.moveSelection(-1) }.keyboardShortcut(.leftArrow, modifiers: [])
             Button("") { model.pasteSelected() }.keyboardShortcut(.return, modifiers: [])
-            Button("") { onDismiss() }.keyboardShortcut(.escape, modifiers: [])
+            Button("") { model.onDismiss() }.keyboardShortcut(.escape, modifiers: [])
             Button("") { model.pasteSelected(asPlainText: true) }.keyboardShortcut("v", modifiers: [.command, .option])
             ForEach(1...9, id: \.self) { n in
                 Button("") { model.pasteIndex(n) }

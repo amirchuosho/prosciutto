@@ -16,8 +16,9 @@ final class PasteService {
         }
     }
 
-    func paste(_ item: ClipItem, asPlainText: Bool = false) {
-        write(item, asPlainText: asPlainText)
+    /// Synthesize a ⌘V keystroke into the frontmost app. Call AFTER focus has
+    /// been returned to the target app.
+    func synthesizePaste() {
         guard AccessibilityAuthorizer.isTrusted else { return }
         let src = CGEventSource(stateID: .combinedSessionState)
         let v: CGKeyCode = 9 // kVK_ANSI_V

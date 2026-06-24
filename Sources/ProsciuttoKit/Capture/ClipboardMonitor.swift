@@ -9,6 +9,8 @@ public final class ClipboardMonitor {
     private var lastChangeCount: Int
     private var timer: Timer?
     public var isPaused = false
+    /// Fired after a new item is captured and stored.
+    public var onCapture: (() -> Void)?
 
     public init(reader: PasteboardReader, store: ClipStore, exclusion: ExclusionPolicy,
                 clock: Clock, ttl: TimeInterval) {
@@ -29,6 +31,7 @@ public final class ClipboardMonitor {
               let kind = KindDetector.detect(snap) else { return }
         let item = ClipItem.make(from: snap, kind: kind, now: clock.now(), ttl: ttl)
         try await store.upsert(item)
+        onCapture?()
     }
 
     public func start(interval: TimeInterval) {

@@ -10,6 +10,36 @@ final class Preferences {
         static let maxAge = "retention.maxAgeDays"
         static let isPaused = "capture.isPaused"
         static let blocked = "exclusion.blockedBundleIDs"
+        static let soundEnabled = "capture.soundEnabled"
+        static let soundName = "capture.soundName"
+        static let appearance = "theme.appearance"
+        static let accentTheme = "theme.accent"
+        static let customAccentHex = "theme.customAccentHex"
+    }
+
+    var appearanceRaw: String {
+        get { defaults.string(forKey: Keys.appearance) ?? "system" }
+        set { defaults.set(newValue, forKey: Keys.appearance) }
+    }
+
+    var accentThemeRaw: String {
+        get { defaults.string(forKey: Keys.accentTheme) ?? "prosciutto" }
+        set { defaults.set(newValue, forKey: Keys.accentTheme) }
+    }
+
+    var customAccentHex: String {
+        get { defaults.string(forKey: Keys.customAccentHex) ?? "#F56B8C" }
+        set { defaults.set(newValue, forKey: Keys.customAccentHex) }
+    }
+
+    var captureSoundEnabled: Bool {
+        get { defaults.object(forKey: Keys.soundEnabled) as? Bool ?? false }
+        set { defaults.set(newValue, forKey: Keys.soundEnabled) }
+    }
+
+    var captureSoundName: String {
+        get { defaults.string(forKey: Keys.soundName) ?? "Pop" }
+        set { defaults.set(newValue, forKey: Keys.soundName) }
     }
 
     var maxItems: Int {
