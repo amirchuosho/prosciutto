@@ -11,6 +11,7 @@
         <attribute name="kind" attributeType="String"/>
         <attribute name="lastUsedAt" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="rtfData" optional="YES" attributeType="Binary"/>
+        <attribute name="sectionID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="sourceAppBundleID" optional="YES" attributeType="String"/>
         <attribute name="sourceAppName" optional="YES" attributeType="String"/>
         <attribute name="textPlain" optional="YES" attributeType="String"/>
@@ -21,5 +22,11 @@
         <fetchIndex name="byLastUsedAt">
             <fetchIndexElement property="lastUsedAt" type="Binary" order="descending"/>
         </fetchIndex>
+    </entity>
+    <entity name="CDSection" representedClassName="CDSection" syncable="YES" codeGenerationType="class">
+        <attribute name="colorHex" attributeType="String" defaultValueString="#888888"/>
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="name" attributeType="String" defaultValueString=""/>
+        <attribute name="sortIndex" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
     </entity>
 </model>

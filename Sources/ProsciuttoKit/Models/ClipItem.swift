@@ -15,11 +15,13 @@ public struct ClipItem: Identifiable, Sendable, Equatable {
     public var contentHash: String
     public var isPinned: Bool
     public var expiresAt: Date?
+    public var sectionID: UUID?
 
     public init(id: UUID, createdAt: Date, lastUsedAt: Date, useCount: Int, kind: ClipKind,
                 textPlain: String? = nil, rtfData: Data? = nil, htmlString: String? = nil,
                 imageData: Data? = nil, sourceAppBundleID: String? = nil, sourceAppName: String? = nil,
-                contentHash: String, isPinned: Bool = false, expiresAt: Date? = nil) {
+                contentHash: String, isPinned: Bool = false, expiresAt: Date? = nil,
+                sectionID: UUID? = nil) {
         self.id = id
         self.createdAt = createdAt
         self.lastUsedAt = lastUsedAt
@@ -34,6 +36,7 @@ public struct ClipItem: Identifiable, Sendable, Equatable {
         self.contentHash = contentHash
         self.isPinned = isPinned
         self.expiresAt = expiresAt
+        self.sectionID = sectionID
     }
 
     public static func make(from snapshot: PasteboardSnapshot, kind: ClipKind,

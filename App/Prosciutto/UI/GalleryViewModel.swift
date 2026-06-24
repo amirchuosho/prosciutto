@@ -1,13 +1,20 @@
 import SwiftUI
 import ProsciuttoKit
 
+enum SectionFilter: Equatable {
+    case all, pinned, section(UUID)
+}
+
 @MainActor
 final class GalleryViewModel: ObservableObject {
     @Published var items: [ClipItem] = []
+    @Published var sections: [ClipSection] = []
+    @Published var sectionFilter: SectionFilter = .all
     @Published var query = ClipQuery()
     @Published var selection: Int = 0
 
     private let store: ClipStore
+    private let sectionPalette = ["#F56B8C", "#5C8FFF", "#52CC85", "#FFAA5C", "#4ECDC8", "#C77DFF"]
 
     /// Set by AppEnvironment. Hides the panel, restores the previous app, then synthesizes paste.
     var onPaste: (ClipItem, Bool) -> Void = { _, _ in }
@@ -25,11 +32,37 @@ final class GalleryViewModel: ObservableObject {
             if a.isPinned != b.isPinned { return a.isPinned && !b.isPinned }
             return a.lastUsedAt > b.lastUsedAt
         }
+        sections = (try? await store.sections()) ?? []
         selection = min(selection, max(0, filtered().count - 1))
     }
 
     func filtered() -> [ClipItem] {
-        query.apply(to: items)
+        let base: [ClipItem]
+        switch sectionFilter {
+        case .all: base = items
+        case .pinned: base = items.filter(\.isPinned)
+        case .section(let id): base = items.filter { $0.sectionID == id }
+        }
+        return query.apply(to: base)
+    }
+
+    func createSection(name: String) async {
+        let trimmed = name.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return }
+        let color = sectionPalette[sections.count % sectionPalette.count]
+        _ = try? await store.createSection(name: trimmed, colorHex: color)
+        await reload()
+    }
+
+    func deleteSection(_ section: ClipSection) async {
+        try? await store.deleteSection(id: section.id)
+        if sectionFilter == .section(section.id) { sectionFilter = .all }
+        await reload()
+    }
+
+    func assign(_ item: ClipItem, to sectionID: UUID?) async {
+        try? await store.assign(itemID: item.id, to: sectionID)
+        await reload()
     }
 
     func moveSelection(_ delta: Int) {

@@ -96,6 +96,7 @@ final class CoreDataClipStore: ClipStore {
         cd.contentHash = i.contentHash
         cd.isPinned = i.isPinned
         cd.expiresAt = i.expiresAt
+        cd.sectionID = i.sectionID
     }
 
     private static func read(_ cd: CDClipItem) -> ClipItem {
@@ -113,6 +114,57 @@ final class CoreDataClipStore: ClipStore {
             sourceAppName: cd.sourceAppName,
             contentHash: cd.contentHash ?? "",
             isPinned: cd.isPinned,
-            expiresAt: cd.expiresAt)
+            expiresAt: cd.expiresAt,
+            sectionID: cd.sectionID)
+    }
+
+    // MARK: Sections
+
+    func sections() async throws -> [ClipSection] {
+        try await perform { ctx in
+            let req = CDSection.fetchRequest()
+            req.sortDescriptors = [NSSortDescriptor(key: "sortIndex", ascending: true)]
+            return try ctx.fetch(req).map {
+                ClipSection(id: $0.id ?? UUID(), name: $0.name ?? "",
+                            colorHex: $0.colorHex ?? "#888888", sortIndex: Int($0.sortIndex))
+            }
+        }
+    }
+
+    func createSection(name: String, colorHex: String) async throws -> ClipSection {
+        try await perform { ctx in
+            let count = try ctx.count(for: CDSection.fetchRequest())
+            let cd = CDSection(context: ctx)
+            let section = ClipSection(name: name, colorHex: colorHex, sortIndex: count)
+            cd.id = section.id
+            cd.name = section.name
+            cd.colorHex = section.colorHex
+            cd.sortIndex = Int64(section.sortIndex)
+            try ctx.save()
+            return section
+        }
+    }
+
+    func deleteSection(id: UUID) async throws {
+        try await perform { ctx in
+            let sreq = CDSection.fetchRequest()
+            sreq.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+            for s in try ctx.fetch(sreq) { ctx.delete(s) }
+
+            let ireq = CDClipItem.fetchRequest()
+            ireq.predicate = NSPredicate(format: "sectionID == %@", id as CVarArg)
+            for item in try ctx.fetch(ireq) { item.sectionID = nil }
+            try ctx.save()
+        }
+    }
+
+    func assign(itemID: UUID, to sectionID: UUID?) async throws {
+        try await perform { ctx in
+            let req = CDClipItem.fetchRequest()
+            req.predicate = NSPredicate(format: "id == %@", itemID as CVarArg)
+            req.fetchLimit = 1
+            if let cd = try ctx.fetch(req).first { cd.sectionID = sectionID }
+            try ctx.save()
+        }
     }
 }
