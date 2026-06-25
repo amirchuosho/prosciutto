@@ -8,10 +8,11 @@ struct ProsciuttoApp: App {
         MenuBarExtra {
             MenuContent(env: env)
         } label: {
-            Image("HamMenuColor")
+            Image("HamBar")
+                .renderingMode(.template)
                 .resizable()
                 .scaledToFit()
-                .frame(width: 21, height: 21)
+                .frame(width: 19, height: 19)
         }
 
         Settings {
