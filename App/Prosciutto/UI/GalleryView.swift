@@ -139,9 +139,9 @@ struct GalleryView: View {
                     .resizable()
                     .renderingMode(.template)
                     .aspectRatio(contentMode: .fit)
-                    .frame(width: 22, height: 22)
+                    .frame(width: 30, height: 30)
                     .foregroundStyle(theme.accent)
-                Text("Prosciutto").font(.system(size: 15, weight: .heavy, design: .rounded))
+                Text("Prosciutto").font(.system(size: 16, weight: .heavy, design: .rounded))
             }
 
             searchField

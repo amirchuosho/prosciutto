@@ -5,8 +5,14 @@ struct ProsciuttoApp: App {
     @StateObject private var env = AppEnvironment()
 
     var body: some Scene {
-        MenuBarExtra("Prosciutto", image: "HamGlyph") {
+        MenuBarExtra {
             MenuContent(env: env)
+        } label: {
+            Image("HamBar")
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 18, height: 18)
         }
 
         Settings {
