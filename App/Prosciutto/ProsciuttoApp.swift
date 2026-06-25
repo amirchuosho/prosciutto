@@ -10,9 +10,6 @@ struct ProsciuttoApp: App {
         } label: {
             Image("HamBar")
                 .renderingMode(.template)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 10, height: 10)
         }
 
         Settings {
