@@ -26,10 +26,7 @@ final class CoreDataClipStore: ClipStore {
 
     func update(_ item: ClipItem) async throws {
         try await perform { ctx in
-            let req = CDClipItem.fetchRequest()
-            req.predicate = NSPredicate(format: "id == %@", item.id as CVarArg)
-            req.fetchLimit = 1
-            if let cd = try ctx.fetch(req).first {
+            if let cd = try Self.fetchItem(item.id, in: ctx) {
                 Self.write(item, into: cd)
             }
             try ctx.save()
@@ -46,20 +43,14 @@ final class CoreDataClipStore: ClipStore {
 
     func delete(id: UUID) async throws {
         try await perform { ctx in
-            let req = CDClipItem.fetchRequest()
-            req.predicate = NSPredicate(format: "id == %@", id as CVarArg)
-            req.fetchLimit = 1
-            if let cd = try ctx.fetch(req).first { ctx.delete(cd) }
+            if let cd = try Self.fetchItem(id, in: ctx) { ctx.delete(cd) }
             try ctx.save()
         }
     }
 
     func setPinned(id: UUID, _ pinned: Bool) async throws {
         try await perform { ctx in
-            let req = CDClipItem.fetchRequest()
-            req.predicate = NSPredicate(format: "id == %@", id as CVarArg)
-            req.fetchLimit = 1
-            if let cd = try ctx.fetch(req).first {
+            if let cd = try Self.fetchItem(id, in: ctx) {
                 cd.isPinned = pinned
                 if pinned { cd.expiresAt = nil }
             }
@@ -79,6 +70,14 @@ final class CoreDataClipStore: ClipStore {
     private func perform<T>(_ block: @escaping (NSManagedObjectContext) throws -> T) async throws -> T {
         let ctx = stack.container.newBackgroundContext()
         return try await ctx.perform { try block(ctx) }
+    }
+
+    /// Fetch a single clip item by id within the given context.
+    private static func fetchItem(_ id: UUID, in ctx: NSManagedObjectContext) throws -> CDClipItem? {
+        let req = CDClipItem.fetchRequest()
+        req.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+        req.fetchLimit = 1
+        return try ctx.fetch(req).first
     }
 
     private static func write(_ i: ClipItem, into cd: CDClipItem) {
@@ -174,10 +173,7 @@ final class CoreDataClipStore: ClipStore {
 
     func assign(itemID: UUID, to sectionID: UUID?) async throws {
         try await perform { ctx in
-            let req = CDClipItem.fetchRequest()
-            req.predicate = NSPredicate(format: "id == %@", itemID as CVarArg)
-            req.fetchLimit = 1
-            if let cd = try ctx.fetch(req).first { cd.sectionID = sectionID }
+            if let cd = try Self.fetchItem(itemID, in: ctx) { cd.sectionID = sectionID }
             try ctx.save()
         }
     }

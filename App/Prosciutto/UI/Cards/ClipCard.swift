@@ -16,9 +16,7 @@ struct ClipCard: View {
 
     private var style: KindStyle { KindStyle.of(item.kind) }
     private var showActions: Bool { hovering || isSelected }
-    private var editable: Bool {
-        switch item.kind { case .text, .rtf, .code, .link, .color: return true; default: return false }
-    }
+    private var editable: Bool { item.kind.isEditable }
 
     var body: some View {
         VStack(spacing: 0) {

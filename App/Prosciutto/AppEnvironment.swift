@@ -70,6 +70,11 @@ final class AppEnvironment: ObservableObject {
         }
     }
 
+    deinit {
+        if let keyMonitor { NSEvent.removeMonitor(keyMonitor) }
+        pruneTimer?.invalidate()
+    }
+
     func toggleGallery() {
         panel.isVisible ? hideGallery() : openGallery()
     }

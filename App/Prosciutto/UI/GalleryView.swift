@@ -266,10 +266,7 @@ struct GalleryView: View {
     }
 
     private func editClosure(for item: ClipItem) -> (() -> Void)? {
-        switch item.kind {
-        case .text, .rtf, .code, .link, .color: return { editingItem = item }
-        default: return nil
-        }
+        item.kind.isEditable ? { editingItem = item } : nil
     }
 
     @ViewBuilder private func cardMenu(_ item: ClipItem) -> some View {

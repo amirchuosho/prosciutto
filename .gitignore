@@ -7,3 +7,4 @@ xcuserdata/
 .build/
 *.xcodeproj/
 .agents/
+skills-lock.json

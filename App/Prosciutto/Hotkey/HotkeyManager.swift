@@ -25,4 +25,6 @@ final class HotkeyManager {
         ref = nil
         handler = nil
     }
+
+    deinit { unregister() }
 }

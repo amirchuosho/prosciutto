@@ -38,6 +38,8 @@ final class GalleryPanel: NSObject {
             name: NSWindow.didResignKeyNotification, object: panel)
     }
 
+    deinit { NotificationCenter.default.removeObserver(self) }
+
     @objc private func panelResignedKey() {
         // Ignore when a sheet (edit / new-section alert) is what took focus.
         guard panel.attachedSheet == nil else { return }
