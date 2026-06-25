@@ -1,71 +1,102 @@
-# 🐖 Prosciutto
+<div align="center">
 
-> Open-source visual clipboard manager for macOS — the delight of Paste+, fully open.
+<img src="docs/icon.png" width="160" alt="Prosciutto icon" />
 
-Prosciutto keeps a rich, visual history of everything you copy: text, images,
-links, colors, code, and files. Hit a global hotkey and a horizontal gallery of
-cards slides up from the bottom of your screen. Scroll, search, and paste — without
-leaving the app you're in.
+# Prosciutto
 
-Built because [Maccy](https://github.com/p0deje/Maccy) is great but minimal, and
-Paste+ is wonderful but closed and paid.
+**A visual, open-source clipboard manager for macOS.**
 
-## Features (v1)
+The delight of Paste+, fully open source.
 
-- **Visual card gallery** — horizontal, scrollable, rich previews per type
-- **Global hotkey** — `⌘⇧V` to summon, rebindable
-- **Six content kinds** — text, image, link (with favicon), color (with swatch), code, file
-- **Quick paste** — `⌘1`–`⌘9` paste a card instantly
-- **Search & filter** — live search, filter by type
-- **Paste as plain text** — `⌘⌥V`
-- **Privacy-first** — honors `org.nspasteboard.Concealed/Transient` markers and a
-  password-manager blocklist; everything stored locally, no telemetry
-- **Pinning** — pin items so they never expire
+[![Platform](https://img.shields.io/badge/platform-macOS%2014%2B-1c1c20)](https://www.apple.com/macos/)
+[![Swift](https://img.shields.io/badge/Swift-5.10-F05138?logo=swift&logoColor=white)](https://swift.org)
+[![License](https://img.shields.io/badge/license-MIT-2ea44f)](LICENSE)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-FF66AE)](#contributing)
 
-Roadmap (later phases): pinboards & snippets, OCR search-in-images, an AI/MCP
-server, and iCloud sync across Mac/iPhone/iPad.
+</div>
+
+---
+
+Prosciutto keeps a rich, visual history of everything you copy. Hit a global hotkey and a
+horizontal gallery of cards slides up from the bottom of your screen, colour-coded by type.
+Scroll, search, pin, and paste, without ever leaving the app you're in.
+
+Built because [Maccy](https://github.com/p0deje/Maccy) is great but minimal, and Paste+ is
+wonderful but closed and paid.
+
+## Features
+
+- 🎴 **Visual card gallery** — a horizontal, scrollable timeline of rich previews
+- 🌈 **Six content kinds, colour-coded** — text, link (with favicon), image, colour swatch, code, file
+- ⌨️ **Keyboard-first** — `⌘⇧V` to summon, arrows to move, `⏎` to paste, `⌘1`–`⌘9` to quick-paste, `esc` to dismiss
+- 📌 **Pin & organise** — pin items to the front, file clips into custom **sections** (drag a card onto a section, recolour and rename them)
+- ✏️ **Inline edit** — tweak text clips; code clips get a monospaced editor with one-click **JSON formatting**
+- 🔎 **Search & filter** — live search, filter by type
+- 🎨 **Themes** — System / Dark / Light, plus accent themes (Prosciutto, Midnight, Forest, Mono) and a custom colour picker
+- 🔁 **Two paste modes** — paste automatically on select, or "load" the item so your next `⌘V` pastes it
+- 🔔 **Optional copy sound**
+- 🔒 **Privacy-first** — honours `org.nspasteboard.Concealed`/`Transient` markers and a password-manager blocklist; everything is stored locally, no telemetry
+
+### Roadmap
+
+OCR search inside images, a local MCP server for AI tools, and iCloud sync across Mac / iPhone / iPad.
+The storage layer is already iCloud-ready.
 
 ## Install
 
-```sh
-brew install --cask prosciutto   # via the tap (coming soon)
-```
+> Homebrew cask and notarized DMG releases are coming. For now, build from source (below).
 
-Or download the notarized DMG from [Releases](https://github.com/OWNER/prosciutto/releases).
+```sh
+brew install --cask prosciutto   # coming soon
+```
 
 ### Permissions
 
-Prosciutto asks for **Accessibility** access so it can paste into the frontmost
-app. Without it, items are copied to the clipboard and you press ⌘V yourself.
-Grant via System Settings → Privacy & Security → Accessibility.
+Prosciutto asks for **Accessibility** access so it can paste into the app you're using. Without it,
+items are copied to the clipboard and you press `⌘V` yourself. Grant via
+**System Settings → Privacy & Security → Accessibility**.
 
 ## Privacy
 
-All clipboard data lives in a local Core Data store on your Mac. Nothing is sent
-anywhere. The only network requests are favicon fetches for link cards.
+All clipboard data lives in a local Core Data store on your Mac. Nothing is sent anywhere. The only
+network requests are favicon fetches for link cards.
 
 ## Build from source
 
-Requires Xcode 15+ and [XcodeGen](https://github.com/yonaskolb/XcodeGen).
+Requires **Xcode 15+** and [XcodeGen](https://github.com/yonaskolb/XcodeGen).
 
 ```sh
 brew install xcodegen
-swift test                                   # run the ProsciuttoKit logic suite
-xcodegen generate                            # generate Prosciutto.xcodeproj
-open Prosciutto.xcodeproj                     # build & run the app in Xcode
+git clone https://github.com/OWNER/prosciutto.git
+cd prosciutto
+
+swift test            # run the ProsciuttoKit logic suite
+xcodegen generate     # generate Prosciutto.xcodeproj from Project.yml
+open Prosciutto.xcodeproj
 ```
 
-Architecture: pure logic lives in the `ProsciuttoKit` Swift package (capture,
-dedupe, kind detection, exclusion, retention, search) and is fully unit-tested
-with `swift test`. The app target (SwiftUI + AppKit) provides the Core Data store,
-menu bar, gallery panel, hotkey, and paste synthesis. The Xcode project is
-generated from `Project.yml` — never edit `.xcodeproj` by hand.
+## Architecture
+
+Logic lives in a pure Swift package, **`ProsciuttoKit`** (capture, dedupe, kind detection, exclusion,
+retention, search, store protocol), fully unit-tested with `swift test` and free of any UI
+dependency. The **app target** (SwiftUI + AppKit) provides the Core Data store, menu bar, slide-up
+panel, global hotkey, and paste synthesis.
+
+The Xcode project is generated from `Project.yml` via XcodeGen, so the `.xcodeproj` is never edited
+by hand (and stays out of version control).
+
+```
+Sources/ProsciuttoKit/   # logic library (testable, no UI)
+App/Prosciutto/          # SwiftUI + AppKit app
+Project.yml              # XcodeGen project definition
+```
 
 ## Contributing
 
-Issues and PRs welcome. Run `swift test` before submitting. The logic layer is
-TDD-first; please add tests for new behavior in `ProsciuttoKit`.
+Issues and PRs welcome. Please run `swift test` before submitting; the logic layer is TDD-first, so
+add tests for new behaviour in `ProsciuttoKit`. Keep UI changes focused and match the existing
+patterns.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+[MIT](LICENSE) — © 2026 Prosciutto contributors.
