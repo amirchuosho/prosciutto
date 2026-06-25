@@ -12,6 +12,7 @@ struct ProsciuttoApp: App {
                 .renderingMode(.template)
                 .resizable()
                 .scaledToFit()
+                .frame(width: 10, height: 10)
         }
 
         Settings {
