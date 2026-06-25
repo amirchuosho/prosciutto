@@ -5,7 +5,7 @@ struct ProsciuttoApp: App {
     @StateObject private var env = AppEnvironment()
 
     var body: some Scene {
-        MenuBarExtra("Prosciutto", systemImage: "rectangle.stack.fill") {
+        MenuBarExtra("Prosciutto", image: "HamGlyph") {
             MenuContent(env: env)
         }
 

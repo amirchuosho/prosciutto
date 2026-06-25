@@ -135,8 +135,11 @@ struct GalleryView: View {
     private var header: some View {
         HStack(spacing: 12) {
             HStack(spacing: 7) {
-                Image(systemName: "rectangle.stack.fill")
-                    .font(.system(size: 15, weight: .bold))
+                Image("HamGlyph")
+                    .resizable()
+                    .renderingMode(.template)
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 22, height: 22)
                     .foregroundStyle(theme.accent)
                 Text("Prosciutto").font(.system(size: 15, weight: .heavy, design: .rounded))
             }
