@@ -243,11 +243,12 @@ struct GalleryView: View {
                             .contextMenu { cardMenu(item) }
                     }
                 }
-                .padding(.horizontal, DS.Space.xxl).padding(.vertical, DS.Space.xxl)
+                .padding(.horizontal, DS.Space.lg).padding(.vertical, DS.Space.lg)
                 .animation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.82),
                            value: model.items)
             }
-            .frame(height: DS.CardSize.height + 2 * DS.Space.xxl)
+            .scrollClipDisabled()
+            .frame(height: DS.CardSize.height + 2 * DS.Space.lg)
             .onChange(of: model.selection) { _, _ in scrollToSelection(proxy) }
         }
     }
@@ -309,7 +310,7 @@ struct GalleryView: View {
             Text(model.query.text.isEmpty ? "Nothing copied yet" : "No matches")
                 .font(.callout).foregroundStyle(.secondary)
         }
-        .frame(height: DS.CardSize.height + 2 * DS.Space.xxl)
+        .frame(height: DS.CardSize.height + 2 * DS.Space.lg)
         .frame(maxWidth: .infinity)
     }
 }
