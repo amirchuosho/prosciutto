@@ -13,6 +13,7 @@ struct ClipCard: View {
     var onDelete: () -> Void = {}
     var onEdit: (() -> Void)? = nil
     var onRename: (String) -> Void = { _ in }
+    var onEditingChanged: (Bool) -> Void = { _ in }
 
     @State private var hovering = false
     @State private var editingTitle = false
@@ -62,6 +63,11 @@ struct ClipCard: View {
                     Image(systemName: style.icon).font(.system(size: 11, weight: .bold))
                         .foregroundStyle(onBand.opacity(0.9))
                     titleView
+                    if hovering && !editingTitle {
+                        Image(systemName: "pencil")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(onBand.opacity(0.55))
+                    }
                 }
                 HStack(spacing: 6) {
                     Text(relativeTime).font(DS.Font.cardTime).foregroundStyle(onBand.opacity(0.78))
@@ -97,7 +103,7 @@ struct ClipCard: View {
                 .tint(onBand)
                 .focused($titleFocused)
                 .onSubmit(commitTitle)
-                .onExitCommand { editingTitle = false }
+                .onExitCommand(perform: cancelTitleEdit)
                 .onChange(of: titleFocused) { _, focused in if !focused { commitTitle() } }
         } else {
             Button { startTitleEdit() } label: {
@@ -112,12 +118,20 @@ struct ClipCard: View {
         titleDraft = item.title ?? ""
         editingTitle = true
         titleFocused = true
+        onEditingChanged(true)
     }
 
     private func commitTitle() {
         guard editingTitle else { return }
         editingTitle = false
+        onEditingChanged(false)
         onRename(titleDraft)
+    }
+
+    private func cancelTitleEdit() {
+        guard editingTitle else { return }
+        editingTitle = false
+        onEditingChanged(false)
     }
 
     /// Distinct colored chip for the section, so section ≠ type colour.

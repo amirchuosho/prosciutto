@@ -12,6 +12,9 @@ final class GalleryViewModel: ObservableObject {
     @Published var sectionFilter: SectionFilter = .all
     @Published var query = ClipQuery()
     @Published var selection: Int = 0
+    /// True while a card title is being edited inline — the key monitor then
+    /// leaves arrows/return/esc to the text field instead of navigating cards.
+    @Published var isEditingTitle = false
 
     private let store: ClipStore
     private let sectionPalette = ["#F56B8C", "#5C8FFF", "#52CC85", "#FFAA5C", "#4ECDC8", "#C77DFF"]

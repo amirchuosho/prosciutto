@@ -91,7 +91,8 @@ final class AppEnvironment: ObservableObject {
     /// Intercept navigation keys before the focused search field swallows them.
     private func installKeyMonitor() {
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            guard let self, self.panel.isVisible, !self.panel.hasSheet else { return event }
+            guard let self, self.panel.isVisible, !self.panel.hasSheet,
+                  !self.vm.isEditingTitle else { return event }
             let mods = event.modifierFlags.intersection([.command, .option, .control, .shift])
 
             // ⌘ combinations first

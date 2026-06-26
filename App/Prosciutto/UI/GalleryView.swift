@@ -233,7 +233,8 @@ struct GalleryView: View {
                                  onPin: { Task { await model.togglePin(item) } },
                                  onDelete: { Task { await model.delete(item) } },
                                  onEdit: editClosure(for: item),
-                                 onRename: { newTitle in Task { await model.setTitle(item, newTitle) } })
+                                 onRename: { newTitle in Task { await model.setTitle(item, newTitle) } },
+                                 onEditingChanged: { model.isEditingTitle = $0 })
                             .id(item.id)
                             .transition(.scale(scale: 0.9).combined(with: .opacity))
                             .draggable(item.id.uuidString) { dragPreview(item) }
