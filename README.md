@@ -23,13 +23,14 @@ Scroll, search, pin, and paste, without ever leaving the app you're in.
 
 ## Features
 
-- 🎴 **Visual card gallery** — a horizontal, scrollable timeline of rich previews
-- 🌈 **Six content kinds, colour-coded** — text, link (with favicon), image, colour swatch, code, file
-- ⌨️ **Keyboard-first** — `⌘⇧V` to summon, arrows to move, `⏎` to paste, `⌘1`–`⌘9` to quick-paste, `esc` to dismiss
-- 📌 **Pin & organise** — pin items to the front, file clips into custom **sections** (drag a card onto a section, recolour and rename them)
-- ✏️ **Inline edit** — tweak text clips; code clips get a monospaced editor with one-click **JSON formatting**
-- 🔎 **Search & filter** — live search, filter by type
-- 🎨 **Themes** — System / Dark / Light, plus accent themes (Prosciutto, Midnight, Forest, Mono) and a custom colour picker
+- 🎴 **Visual card gallery** — big cards with a coloured type header, source-app icon, and rich previews (images, links, colour swatches, code, files)
+- 🌈 **Type colour-coding** — text, link, image, colour, code, file each have their own colour; sections show as a separate tag so colour never means two things
+- ⌨️ **Keyboard-first** — `⌘⇧V` to summon, arrows to move, `⏎` to paste, `⌘1`–`⌘9` to quick-paste, `⌘⌫` to delete, `esc` to dismiss
+- 📌 **Pin, reorder & organise** — pin favourites and drag to reorder them (stable `⌘1`–`⌘9`); file clips into custom **sections** (drag a card onto a section; recolour, rename, drop-to-file)
+- 🏷️ **Name any clip** — click a card's title to rename it in place; titles are searchable (name a password "Instagram", find it by "instagram")
+- ✏️ **Inline edit** — edit content right in the card, no modal; code clips get a monospaced editor with one-click **JSON formatting**
+- 🔎 **Search & filter** — live search across titles and content, filter by type
+- 🎨 **Themes** — System / Dark / Light (Light is a warm cream), accent themes (Prosciutto, Midnight, Forest, Mono) + custom colour, with a bold gradient selection
 - 🔁 **Two paste modes** — paste automatically on select, or "load" the item so your next `⌘V` pastes it
 - 🔔 **Optional copy sound**
 - 🔒 **Privacy-first** — honours `org.nspasteboard.Concealed`/`Transient` markers and a password-manager blocklist; everything is stored locally, no telemetry
