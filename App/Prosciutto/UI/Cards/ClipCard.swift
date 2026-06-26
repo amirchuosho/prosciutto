@@ -11,14 +11,17 @@ struct ClipCard: View {
     var section: (name: String, color: Color)? = nil
     var onPin: () -> Void = {}
     var onDelete: () -> Void = {}
-    var onEdit: (() -> Void)? = nil
     var onRename: (String) -> Void = { _ in }
+    var onEditBody: (String) -> Void = { _ in }
     var onEditingChanged: (Bool) -> Void = { _ in }
 
     @State private var hovering = false
     @State private var editingTitle = false
     @State private var titleDraft = ""
     @FocusState private var titleFocused: Bool
+    @State private var editingBody = false
+    @State private var bodyDraft = ""
+    @FocusState private var bodyFocused: Bool
     @Environment(\.colorScheme) private var scheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -31,11 +34,11 @@ struct ClipCard: View {
     var body: some View {
         VStack(spacing: 0) {
             header
-            content
+            bodyContent
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 .background(DS.cardBody(scheme))
                 .clipped()
-                .overlay(alignment: .bottomTrailing) { if showActions { actionBar } }
+                .overlay(alignment: .bottomTrailing) { if showActions && !editingBody { actionBar } }
             footer
         }
         .frame(width: DS.CardSize.width, height: DS.CardSize.height)
@@ -189,7 +192,7 @@ struct ClipCard: View {
     private var actionBar: some View {
         HStack(spacing: 2) {
             actionButton(item.isPinned ? "pin.slash.fill" : "pin.fill", onPin)
-            if item.kind.isEditable, let onEdit { actionButton("pencil", onEdit) }
+            if item.kind.isEditable { actionButton("pencil") { startBodyEdit() } }
             actionButton("trash.fill", onDelete, destructive: true)
         }
         .padding(4)
@@ -213,7 +216,11 @@ struct ClipCard: View {
 
     // MARK: Content + meta
 
-    @ViewBuilder private var content: some View {
+    @ViewBuilder private var bodyContent: some View {
+        if editingBody { inlineEditor } else { kindContent }
+    }
+
+    @ViewBuilder private var kindContent: some View {
         switch item.kind {
         case .image: ImageCard(item: item)
         case .link:  LinkCard(item: item)
@@ -222,6 +229,47 @@ struct ClipCard: View {
         case .file:  FileCard(item: item)
         case .text, .rtf: TextCard(item: item)
         }
+    }
+
+    // MARK: Inline body editor (replaces the modal)
+
+    private var inlineEditor: some View {
+        VStack(spacing: 0) {
+            TextEditor(text: $bodyDraft)
+                .font(item.kind == .code ? DS.Font.contentMono : DS.Font.content)
+                .scrollContentBackground(.hidden)
+                .focused($bodyFocused)
+                .onExitCommand(perform: cancelBodyEdit)
+                .padding(.horizontal, DS.Space.sm).padding(.top, DS.Space.sm)
+            HStack(spacing: DS.Space.sm) {
+                if item.kind == .code, JSONTools.pretty(bodyDraft) != nil {
+                    Button("Format") { if let p = JSONTools.pretty(bodyDraft) { bodyDraft = p } }
+                        .font(.system(size: 11))
+                }
+                Spacer(minLength: 0)
+                Button("Cancel", action: cancelBodyEdit).font(.system(size: 11))
+                Button("Save", action: commitBodyEdit)
+                    .font(.system(size: 11, weight: .semibold))
+                    .buttonStyle(.borderedProminent).controlSize(.small)
+            }
+            .padding(.horizontal, DS.Space.sm).padding(.vertical, 6)
+        }
+    }
+
+    func startBodyEdit() {
+        bodyDraft = item.textPlain ?? ""
+        editingBody = true
+        bodyFocused = true
+        onEditingChanged(true)
+    }
+    private func commitBodyEdit() {
+        editingBody = false
+        onEditingChanged(false)
+        onEditBody(bodyDraft)
+    }
+    private func cancelBodyEdit() {
+        editingBody = false
+        onEditingChanged(false)
     }
 
     private var relativeTime: String {

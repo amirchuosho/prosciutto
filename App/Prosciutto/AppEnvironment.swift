@@ -63,6 +63,11 @@ final class AppEnvironment: ObservableObject {
         hotkey.register()
         installKeyMonitor()
 
+        // Show the gallery when the user re-opens the app from Launchpad/Dock.
+        NotificationCenter.default.addObserver(forName: .prosciuttoOpenGallery, object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in self?.openGallery() }
+        }
+
         startPruneTimer()
 
         if !AccessibilityAuthorizer.isTrusted {

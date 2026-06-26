@@ -2,6 +2,7 @@ import SwiftUI
 
 @main
 struct ProsciuttoApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var env = AppEnvironment()
 
     init() { FontRegistrar.registerBundledFonts() }

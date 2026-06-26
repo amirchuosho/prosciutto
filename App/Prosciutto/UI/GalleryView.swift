@@ -7,10 +7,10 @@ struct GalleryView: View {
     @FocusState private var searchFocused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.colorScheme) private var scheme
-    @State private var editingItem: ClipItem?
     @State private var editingSection: ClipSection?
     @State private var showingAddSection = false
     @State private var newSectionName = ""
+    @State private var dropPulse: UUID?
 
     private let kinds: [ClipKind] = [.text, .link, .image, .color, .code, .file]
 
@@ -31,13 +31,6 @@ struct GalleryView: View {
         .tint(theme.accent)
         .preferredColorScheme(theme.colorScheme)
         .onAppear { searchFocused = true }
-        .sheet(item: $editingItem) { item in
-            EditSheet(item: item) { newText in
-                Task { await model.updateText(item, newText: newText) }
-            }
-            .tint(theme.accent)
-            .preferredColorScheme(theme.colorScheme)
-        }
         .sheet(item: $editingSection) { section in
             EditSectionSheet(section: section, palette: model.sectionColors) { name, hex in
                 Task { await model.updateSection(section, name: name, hex: hex) }
@@ -75,9 +68,15 @@ struct GalleryView: View {
                                 color: color, active: model.sectionFilter == .section(section.id)) {
                         model.sectionFilter = .section(section.id)
                     }
+                    .scaleEffect(dropPulse == section.id ? 1.18 : 1)
+                    .animation(.spring(response: 0.3, dampingFraction: 0.5), value: dropPulse)
                     .dropDestination(for: String.self) { ids, _ in
                         guard let s = ids.first, let uuid = UUID(uuidString: s) else { return false }
                         Task { await model.assignID(uuid, to: section.id) }
+                        dropPulse = section.id
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+                            if dropPulse == section.id { dropPulse = nil }
+                        }
                         return true
                     }
                     .contextMenu {
@@ -248,8 +247,8 @@ struct GalleryView: View {
                                  section: sectionTag(for: item),
                                  onPin: { Task { await model.togglePin(item) } },
                                  onDelete: { Task { await model.delete(item) } },
-                                 onEdit: editClosure(for: item),
                                  onRename: { newTitle in Task { await model.setTitle(item, newTitle) } },
+                                 onEditBody: { newText in Task { await model.updateText(item, newText: newText) } },
                                  onEditingChanged: { model.isEditingTitle = $0 })
                             .id(item.id)
                             .transition(.scale(scale: 0.9).combined(with: .opacity))
@@ -292,10 +291,6 @@ struct GalleryView: View {
         else { withAnimation(.easeOut(duration: 0.12)) { proxy.scrollTo(id, anchor: .center) } }
     }
 
-    private func editClosure(for item: ClipItem) -> (() -> Void)? {
-        item.kind.isEditable ? { editingItem = item } : nil
-    }
-
     /// The section a card is filed in, as a (name, colour) tag. Type stays the
     /// header colour; the section shows as a separate tag.
     private func sectionTag(for item: ClipItem) -> (name: String, color: Color)? {
@@ -306,9 +301,6 @@ struct GalleryView: View {
 
     @ViewBuilder private func cardMenu(_ item: ClipItem) -> some View {
         Button(item.isPinned ? "Unpin" : "Pin to front") { Task { await model.togglePin(item) } }
-        if editClosure(for: item) != nil {
-            Button("Edit…") { editingItem = item }
-        }
         if !model.sections.isEmpty {
             Menu("Move to") {
                 Button("None") { Task { await model.assign(item, to: nil) } }
