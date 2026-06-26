@@ -6,10 +6,10 @@ struct CodeCard: View {
     var body: some View {
         Text(item.textPlain ?? "")
             .font(DS.Font.contentMono)
-            .lineLimit(8)
+            .lineLimit(10)
             .foregroundStyle(.primary)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .padding(DS.Space.md)
-            .background(Color.black.opacity(0.14))
+            .padding(DS.Space.lg)
+            .background(Color.black.opacity(0.18))
     }
 }

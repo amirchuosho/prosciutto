@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Central design tokens. One source of truth for spacing, radius, typography,
-/// and the neutral surface/stroke colors so the whole UI stays consistent.
+/// and surfaces so the whole UI stays consistent. Paste-grade sizing.
 enum DS {
     enum Space {
         static let xs: CGFloat = 4
@@ -9,31 +9,57 @@ enum DS {
         static let md: CGFloat = 12
         static let lg: CGFloat = 16
         static let xl: CGFloat = 20
+        static let xxl: CGFloat = 28
     }
 
     enum Radius {
-        static let card: CGFloat = 12
-        static let panel: CGFloat = 20
-        static let control: CGFloat = 8
+        static let card: CGFloat = 18
+        static let panel: CGFloat = 24
+        static let control: CGFloat = 10
+        static let pill: CGFloat = 20
     }
 
     enum CardSize {
-        static let width: CGFloat = 196
-        static let height: CGFloat = 224
+        static let width: CGFloat = 236
+        static let height: CGFloat = 300
+        static let header: CGFloat = 62
+        static let appIcon: CGFloat = 30
     }
 
-    // Neutral surfaces / strokes (work on the dark glass panel)
-    static let cardStroke = Color.white.opacity(0.08)
-    static let cardStrokeSelected = Color.accentColor          // overridden with theme accent at call site
-    static let hairline = Color.white.opacity(0.06)
+    // Adaptive surfaces: dark glass vs Paste-style warm cream.
+    static func cardBody(_ s: ColorScheme) -> Color {
+        s == .dark ? Color(.sRGB, white: 0.11) : .white
+    }
+    static func panelFill(_ s: ColorScheme) -> Color {
+        s == .dark ? Color(.sRGB, white: 0.07).opacity(0.0)
+                   : Color(.sRGB, red: 0.96, green: 0.945, blue: 0.92)   // warm cream
+    }
+    static func cardStroke(_ s: ColorScheme) -> Color {
+        s == .dark ? .white.opacity(0.06) : .black.opacity(0.06)
+    }
+    static func hairline(_ s: ColorScheme) -> Color {
+        s == .dark ? .white.opacity(0.06) : .black.opacity(0.07)
+    }
+    static func footerMeta(_ s: ColorScheme) -> Color {
+        s == .dark ? Color.secondary : Color(.sRGB, white: 0.45)
+    }
+
+    enum Typeface {
+        /// Custom display font (bundled). Falls back to system if missing.
+        static func display(_ size: CGFloat, _ weight: SwiftUI.Font.Weight = .semibold) -> SwiftUI.Font {
+            SwiftUI.Font.custom("Outfit", size: size).weight(weight)
+        }
+    }
 
     enum Font {
-        static let brand = SwiftUI.Font.system(size: 15, weight: .bold, design: .rounded)
-        static let typeLabel = SwiftUI.Font.system(size: 9.5, weight: .bold)   // tracked, uppercase
-        static let meta = SwiftUI.Font.system(size: 10, weight: .medium)
-        static let shortcut = SwiftUI.Font.system(size: 9.5, weight: .semibold, design: .rounded)
-        static let content = SwiftUI.Font.system(size: 12.5)
-        static let contentMono = SwiftUI.Font.system(size: 11, design: .monospaced)
-        static let title = SwiftUI.Font.system(size: 12.5, weight: .semibold)
+        static let brand = Typeface.display(16, .bold)
+        static let cardTitle = Typeface.display(16.5, .bold)      // header type name
+        static let cardTime = SwiftUI.Font.system(size: 11.5, weight: .medium)
+        static let sectionPill = Typeface.display(13, .semibold)
+        static let meta = SwiftUI.Font.system(size: 11, weight: .medium)
+        static let shortcut = SwiftUI.Font.system(size: 11, weight: .bold, design: .rounded)
+        static let content = SwiftUI.Font.system(size: 14)
+        static let contentMono = SwiftUI.Font.system(size: 12.5, design: .monospaced)
+        static let title = SwiftUI.Font.system(size: 14, weight: .semibold)
     }
 }

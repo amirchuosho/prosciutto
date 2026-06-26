@@ -1,12 +1,19 @@
 import SwiftUI
+import AppKit
 import ProsciuttoKit
 
 /// Per-content-kind visual identity: color, icon, and short label.
-/// Drives the colored type badge and the card's kind tint.
+/// Drives the colored card header and per-type accents.
 struct KindStyle {
     let color: Color
     let icon: String
     let label: String
+
+    /// Title-case name for the header ("Text", "Link", "Code").
+    var title: String { label.capitalized }
+
+    /// Black or white, whichever reads on the colored header.
+    var onColor: Color { color.readableText }
 
     static func of(_ kind: ClipKind) -> KindStyle {
         switch kind {

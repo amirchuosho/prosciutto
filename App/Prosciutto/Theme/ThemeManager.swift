@@ -28,13 +28,20 @@ enum AccentTheme: String, CaseIterable, Identifiable {
         }
     }
 
-    func color(customHex: String) -> Color {
+    func color(customHex: String) -> Color { colors(customHex: customHex)[0] }
+
+    /// Two-stop gradient [start, end] for selection rings / accents.
+    func colors(customHex: String) -> [Color] {
         switch self {
-        case .prosciutto: return Color(.sRGB, red: 0.96, green: 0.42, blue: 0.55) // ham pink
-        case .midnight:   return Color(.sRGB, red: 0.40, green: 0.56, blue: 1.00)
-        case .forest:     return Color(.sRGB, red: 0.32, green: 0.80, blue: 0.52)
-        case .mono:       return Color(.sRGB, red: 0.78, green: 0.80, blue: 0.85)
-        case .custom:     return Color(hex: customHex) ?? .accentColor
+        case .prosciutto: return [Color(.sRGB, red: 1.00, green: 0.44, blue: 0.64),   // hot pink
+                                  Color(.sRGB, red: 1.00, green: 0.27, blue: 0.40)]   // red
+        case .midnight:   return [Color(.sRGB, red: 0.40, green: 0.60, blue: 1.00),
+                                  Color(.sRGB, red: 0.36, green: 0.36, blue: 0.98)]
+        case .forest:     return [Color(.sRGB, red: 0.36, green: 0.84, blue: 0.56),
+                                  Color(.sRGB, red: 0.09, green: 0.64, blue: 0.40)]
+        case .mono:       return [Color(.sRGB, red: 0.86, green: 0.88, blue: 0.92),
+                                  Color(.sRGB, red: 0.62, green: 0.64, blue: 0.70)]
+        case .custom:     let c = Color(hex: customHex) ?? .accentColor; return [c, c]
         }
     }
 }
@@ -58,5 +65,9 @@ final class ThemeManager: ObservableObject {
     }
 
     var accent: Color { accentTheme.color(customHex: customAccentHex) }
+    var accentColors: [Color] { accentTheme.colors(customHex: customAccentHex) }
+    var accentGradient: LinearGradient {
+        LinearGradient(colors: accentColors, startPoint: .topLeading, endPoint: .bottomTrailing)
+    }
     var colorScheme: ColorScheme? { appearance.colorScheme }
 }

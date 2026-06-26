@@ -4,6 +4,8 @@ import SwiftUI
 struct ProsciuttoApp: App {
     @StateObject private var env = AppEnvironment()
 
+    init() { FontRegistrar.registerBundledFonts() }
+
     var body: some Scene {
         MenuBarExtra {
             MenuContent(env: env)

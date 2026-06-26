@@ -6,9 +6,9 @@ struct TextCard: View {
     var body: some View {
         Text(item.textPlain ?? "")
             .font(DS.Font.content)
-            .lineLimit(7)
+            .lineLimit(9)
             .foregroundStyle(.primary)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .padding(DS.Space.md)
+            .padding(DS.Space.lg)
     }
 }

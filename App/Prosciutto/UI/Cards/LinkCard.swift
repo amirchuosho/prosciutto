@@ -20,7 +20,7 @@ struct LinkCard: View {
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .padding(DS.Space.md)
+        .padding(DS.Space.lg)
     }
 
     @ViewBuilder private var favicon: some View {

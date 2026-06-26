@@ -26,6 +26,13 @@ extension Color {
         self = Color(.sRGB, red: r, green: g, blue: b, opacity: a)
     }
 
+    /// Black or white text, whichever reads on this color as a background.
+    var readableText: Color {
+        let c = NSColor(self).usingColorSpace(.sRGB) ?? .white
+        let lum = 0.299 * c.redComponent + 0.587 * c.greenComponent + 0.114 * c.blueComponent
+        return lum > 0.62 ? .black : .white
+    }
+
     /// Hex string like "#RRGGBB" from this color (best-effort via NSColor).
     func toHex() -> String? {
         guard let rgb = NSColor(self).usingColorSpace(.sRGB) else { return nil }

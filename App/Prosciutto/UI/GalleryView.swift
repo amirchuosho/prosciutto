@@ -6,6 +6,7 @@ struct GalleryView: View {
     @EnvironmentObject var theme: ThemeManager
     @FocusState private var searchFocused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.colorScheme) private var scheme
     @State private var editingItem: ClipItem?
     @State private var editingSection: ClipSection?
     @State private var showingAddSection = false
@@ -100,15 +101,20 @@ struct GalleryView: View {
     private func sectionChip(label: String, systemImage: String? = nil, dotColor: Color? = nil,
                              color: Color, active: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: 5) {
-                if let systemImage { Image(systemName: systemImage).font(.system(size: 9, weight: .bold)) }
-                if let dotColor { Circle().fill(dotColor).frame(width: 7, height: 7) }
-                Text(label).font(.system(size: 11.5, weight: .medium))
+            HStack(spacing: 6) {
+                if let systemImage {
+                    Image(systemName: systemImage).font(.system(size: 10, weight: .bold))
+                }
+                if let dotColor {
+                    Circle().fill(dotColor).frame(width: 9, height: 9)
+                        .shadow(color: dotColor.opacity(0.6), radius: active ? 3 : 0)
+                }
+                Text(label).font(DS.Font.sectionPill)
             }
-            .foregroundStyle(active ? color : .secondary)
-            .padding(.horizontal, 10).padding(.vertical, 5)
-            .background(active ? color.opacity(0.18) : Color.secondary.opacity(0.08), in: Capsule())
-            .overlay(Capsule().strokeBorder(active ? color.opacity(0.5) : .clear, lineWidth: 1))
+            .foregroundStyle(active ? Color.primary : .secondary)
+            .padding(.horizontal, DS.Space.md).padding(.vertical, 7)
+            .background(active ? color.opacity(0.22) : Color.white.opacity(0.05), in: Capsule())
+            .overlay(Capsule().strokeBorder(active ? color.opacity(0.55) : .clear, lineWidth: 1))
         }
         .buttonStyle(.plain)
     }
@@ -118,11 +124,15 @@ struct GalleryView: View {
     private var panelBackground: some View {
         ZStack {
             RoundedRectangle(cornerRadius: DS.Radius.panel, style: .continuous).fill(.ultraThinMaterial)
-            // a whisper of accent at the bottom edge, not a wash
-            RadialGradient(colors: [theme.accent.opacity(0.10), .clear],
-                           center: .bottom, startRadius: 4, endRadius: 480)
+            if scheme == .light {
+                RoundedRectangle(cornerRadius: DS.Radius.panel, style: .continuous)
+                    .fill(DS.panelFill(.light).opacity(0.86))
+            } else {
+                RadialGradient(colors: [theme.accent.opacity(0.10), .clear],
+                               center: .bottom, startRadius: 4, endRadius: 480)
+            }
             RoundedRectangle(cornerRadius: DS.Radius.panel, style: .continuous)
-                .strokeBorder(.white.opacity(0.10), lineWidth: 1)
+                .strokeBorder(scheme == .dark ? .white.opacity(0.10) : .black.opacity(0.08), lineWidth: 1)
         }
         .compositingGroup()
     }
@@ -138,7 +148,7 @@ struct GalleryView: View {
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 30, height: 30)
                     .foregroundStyle(theme.accent)
-                Text("Prosciutto").font(.system(size: 16, weight: .heavy, design: .rounded))
+                Text("Prosciutto").font(DS.Font.brand)
             }
 
             searchField
@@ -196,15 +206,14 @@ struct GalleryView: View {
         return Button {
             if on { model.query.kinds.remove(kind) } else { model.query.kinds.insert(kind) }
         } label: {
-            HStack(spacing: 4) {
-                Image(systemName: style.icon).font(.system(size: 9, weight: .bold))
-                Text(kind.rawValue.capitalized).font(.system(size: 11, weight: .medium))
-            }
-            .foregroundStyle(on ? style.color : .secondary)
-            .padding(.horizontal, 9).padding(.vertical, 5)
-            .background(on ? style.color.opacity(0.18) : Color.secondary.opacity(0.10), in: Capsule())
+            Image(systemName: style.icon)
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(on ? style.onColor : style.color)
+                .frame(width: 27, height: 27)
+                .background(Circle().fill(on ? AnyShapeStyle(style.color) : AnyShapeStyle(style.color.opacity(0.16))))
         }
         .buttonStyle(.plain)
+        .help(kind.rawValue.capitalized)
     }
 
     // MARK: Cards
@@ -212,13 +221,15 @@ struct GalleryView: View {
     private var cards: some View {
         ScrollViewReader { proxy in
             ScrollView(.horizontal, showsIndicators: false) {
-                LazyHStack(spacing: 14) {
+                LazyHStack(spacing: DS.Space.lg) {
                     let list = model.filtered()
                     ForEach(Array(list.enumerated()), id: \.element.id) { idx, item in
                         ClipCard(item: item,
                                  index: idx + 1,
                                  isSelected: idx == model.selection,
                                  accent: theme.accent,
+                                 accentGradient: theme.accentGradient,
+                                 headerColor: sectionColor(for: item),
                                  onPin: { Task { await model.togglePin(item) } },
                                  onDelete: { Task { await model.delete(item) } },
                                  onEdit: editClosure(for: item))
@@ -232,11 +243,11 @@ struct GalleryView: View {
                             .contextMenu { cardMenu(item) }
                     }
                 }
-                .padding(.horizontal, DS.Space.md).padding(.vertical, DS.Space.md)
+                .padding(.horizontal, DS.Space.lg).padding(.vertical, DS.Space.lg)
                 .animation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.82),
                            value: model.items)
             }
-            .frame(height: DS.CardSize.height + 2 * DS.Space.lg)
+            .frame(height: DS.CardSize.height + 2 * DS.Space.xl)
             .onChange(of: model.selection) { _, _ in scrollToSelection(proxy) }
         }
     }
@@ -266,6 +277,13 @@ struct GalleryView: View {
         item.kind.isEditable ? { editingItem = item } : nil
     }
 
+    /// A filed card takes its section's colour (Paste pinboards); else kind colour.
+    private func sectionColor(for item: ClipItem) -> Color? {
+        guard let id = item.sectionID,
+              let s = model.sections.first(where: { $0.id == id }) else { return nil }
+        return Color(hex: s.colorHex)
+    }
+
     @ViewBuilder private func cardMenu(_ item: ClipItem) -> some View {
         Button(item.isPinned ? "Unpin" : "Pin to front") { Task { await model.togglePin(item) } }
         if editClosure(for: item) != nil {
@@ -291,7 +309,7 @@ struct GalleryView: View {
             Text(model.query.text.isEmpty ? "Nothing copied yet" : "No matches")
                 .font(.callout).foregroundStyle(.secondary)
         }
-        .frame(height: DS.CardSize.height + 2 * DS.Space.lg)
+        .frame(height: DS.CardSize.height + 2 * DS.Space.xl)
         .frame(maxWidth: .infinity)
     }
 }
