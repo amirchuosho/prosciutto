@@ -11,124 +11,102 @@ struct ClipCard: View {
     var onEdit: (() -> Void)? = nil
 
     @State private var hovering = false
-    @State private var pinPulse = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var style: KindStyle { KindStyle.of(item.kind) }
     private var showActions: Bool { hovering || isSelected }
-    private var editable: Bool { item.kind.isEditable }
 
     var body: some View {
         VStack(spacing: 0) {
+            accentLine
             header
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                .background(bodyTint)
                 .clipped()
             footer
         }
-        .frame(width: 226, height: 252)
-        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.regularMaterial))
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay(border)
+        .frame(width: DS.CardSize.width, height: DS.CardSize.height)
+        .background(RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous).fill(.regularMaterial))
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
+                .strokeBorder(isSelected ? accent : DS.cardStroke, lineWidth: isSelected ? 1.5 : 1)
+        )
         .overlay(alignment: .bottom) {
-            if showActions {
-                actionBar.transition(.move(edge: .bottom).combined(with: .opacity))
-            }
+            if showActions { actionBar.transition(.opacity) }
         }
-        .shadow(color: .black.opacity(0.3), radius: 7, y: 4)
-        .shadow(color: isSelected ? accent.opacity(0.5) : .clear, radius: 14, y: 0)
-        .scaleEffect(isSelected ? 1.05 : (hovering ? 1.02 : 1.0))
-        .zIndex(isSelected ? 1 : 0)
-        .animation(reduceMotion ? nil : .spring(response: 0.22, dampingFraction: 0.86), value: isSelected)
+        .shadow(color: isSelected ? accent.opacity(0.25) : .black.opacity(0.22),
+                radius: isSelected ? 10 : 5, y: isSelected ? 5 : 3)
+        .scaleEffect(isSelected ? 1.025 : 1.0)
+        .animation(reduceMotion ? nil : .spring(response: 0.24, dampingFraction: 0.85), value: isSelected)
         .animation(reduceMotion ? nil : .easeOut(duration: 0.13), value: hovering)
         .onHover { hovering = $0 }
     }
 
-    private var bodyTint: some View {
-        LinearGradient(colors: [style.color.opacity(0.34), style.color.opacity(0.10)],
-                       startPoint: .top, endPoint: .bottom)
+    /// The single colour cue: a thin top accent in the kind colour.
+    private var accentLine: some View {
+        style.color.frame(height: 2.5)
     }
-
-    // MARK: Header band
 
     private var header: some View {
-        HStack(spacing: 5) {
-            Image(systemName: style.icon).font(.system(size: 11, weight: .heavy))
-            Text(style.label).font(.system(size: 11, weight: .heavy, design: .rounded)).tracking(0.8)
-            Spacer(minLength: 4)
+        HStack(spacing: DS.Space.xs + 1) {
+            Image(systemName: style.icon)
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(style.color)
+            Text(style.label)
+                .font(DS.Font.typeLabel).tracking(0.6)
+                .foregroundStyle(.secondary)
+            Spacer(minLength: DS.Space.xs)
             if item.isPinned {
-                Image(systemName: "pin.fill").font(.system(size: 10))
-                    .rotationEffect(.degrees(pinPulse ? -18 : 0))
-                    .scaleEffect(pinPulse ? 1.35 : 1)
+                Image(systemName: "pin.fill").font(.system(size: 8.5)).foregroundStyle(.tertiary)
             }
-            Text(relativeTime).font(.system(size: 10, weight: .semibold, design: .rounded))
+            Text(relativeTime).font(DS.Font.meta).foregroundStyle(.tertiary)
         }
-        .foregroundStyle(.white)
-        .padding(.horizontal, 11).padding(.vertical, 8)
-        .background(
-            LinearGradient(colors: [style.color, style.color.opacity(0.82)],
-                           startPoint: .leading, endPoint: .trailing)
-        )
+        .padding(.horizontal, DS.Space.md)
+        .padding(.top, DS.Space.sm)
+        .padding(.bottom, DS.Space.xs + 2)
     }
-
-    // MARK: Footer
 
     private var footer: some View {
-        HStack(spacing: 5) {
-            Text(meta).font(.system(size: 9, weight: .medium)).foregroundStyle(.secondary)
-                .lineLimit(1)
-            Spacer(minLength: 4)
+        HStack(spacing: DS.Space.xs) {
+            Text(meta).font(DS.Font.meta).foregroundStyle(.tertiary).lineLimit(1)
+            Spacer(minLength: DS.Space.xs)
             if let index, index <= 9 {
-                Text("⌘\(index)")
-                    .font(.system(size: 9, weight: .bold, design: .rounded))
-                    .foregroundStyle(isSelected ? .white : .secondary)
-                    .padding(.horizontal, 5).padding(.vertical, 1.5)
-                    .background(Capsule().fill(isSelected ? accent : Color.secondary.opacity(0.22)))
+                Text("\(index)")
+                    .font(DS.Font.shortcut)
+                    .foregroundStyle(isSelected ? accent : .secondary)
+                    .frame(width: 15, height: 15)
+                    .background(Circle().fill(isSelected ? accent.opacity(0.16) : Color.secondary.opacity(0.12)))
             }
         }
-        .padding(.horizontal, 10).padding(.vertical, 6)
-        .background(.thinMaterial)
+        .padding(.horizontal, DS.Space.md)
+        .padding(.vertical, DS.Space.sm - 1)
+        .overlay(alignment: .top) { Rectangle().fill(DS.hairline).frame(height: 1) }
     }
-
-    private var border: some View {
-        RoundedRectangle(cornerRadius: 16, style: .continuous)
-            .strokeBorder(isSelected ? accent : style.color.opacity(0.35),
-                          lineWidth: isSelected ? 2.5 : 1)
-    }
-
-    // MARK: Actions
 
     private var actionBar: some View {
-        HStack(spacing: 6) {
-            actionButton(item.isPinned ? "pin.slash.fill" : "pin.fill", tint: accent) {
-                if !reduceMotion {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.4)) { pinPulse = true }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { pinPulse = false }
-                }
-                onPin()
-            }
-            if editable, let onEdit { actionButton("pencil", tint: .white, action: onEdit) }
+        HStack(spacing: DS.Space.sm) {
+            actionButton(item.isPinned ? "pin.slash" : "pin", onPin)
+            if item.kind.isEditable, let onEdit { actionButton("pencil", onEdit) }
             Spacer(minLength: 0)
-            actionButton("trash.fill", tint: .red, action: onDelete)
+            actionButton("trash", onDelete, role: .destructive)
         }
-        .padding(.horizontal, 8).padding(.vertical, 7)
-        .background(LinearGradient(colors: [.black.opacity(0.6), .clear],
-                                   startPoint: .bottom, endPoint: .top))
+        .padding(.horizontal, DS.Space.sm)
+        .padding(.vertical, DS.Space.sm - 2)
+        .background(.ultraThinMaterial)
     }
 
-    private func actionButton(_ icon: String, tint: Color, action: @escaping () -> Void) -> some View {
+    private func actionButton(_ icon: String, _ action: @escaping () -> Void,
+                              role: ButtonRole? = nil) -> some View {
         Button(action: action) {
-            Image(systemName: icon).font(.system(size: 11, weight: .bold))
-                .foregroundStyle(tint)
-                .frame(width: 26, height: 26)
-                .background(Circle().fill(.ultraThinMaterial))
-                .overlay(Circle().strokeBorder(tint.opacity(0.5), lineWidth: 1))
+            Image(systemName: icon)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(role == .destructive ? Color.red.opacity(0.9) : .secondary)
+                .frame(width: 24, height: 22)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
-
-    // MARK: Content + meta
 
     @ViewBuilder private var content: some View {
         switch item.kind {
@@ -142,9 +120,11 @@ struct ClipCard: View {
     }
 
     private var relativeTime: String {
+        let now = Date()
+        if now.timeIntervalSince(item.lastUsedAt) < 5 { return "now" }
         let f = RelativeDateTimeFormatter()
         f.unitsStyle = .abbreviated
-        return f.localizedString(for: item.lastUsedAt, relativeTo: Date())
+        return f.localizedString(for: item.lastUsedAt, relativeTo: now)
     }
 
     private var meta: String {
@@ -152,14 +132,10 @@ struct ClipCard: View {
         case .text, .rtf, .code:
             let n = item.textPlain?.count ?? 0
             return "\(n) chars" + (item.sourceAppName.map { " · \($0)" } ?? "")
-        case .link:
-            return URL(string: item.textPlain ?? "")?.host ?? "Link"
-        case .image:
-            return ByteCountFormatter.string(fromByteCount: Int64(item.imageData?.count ?? 0), countStyle: .file)
-        case .color:
-            return item.textPlain ?? "Color"
-        case .file:
-            return item.sourceAppName ?? "File"
+        case .link:  return URL(string: item.textPlain ?? "")?.host ?? "Link"
+        case .image: return ByteCountFormatter.string(fromByteCount: Int64(item.imageData?.count ?? 0), countStyle: .file)
+        case .color: return item.textPlain ?? "Color"
+        case .file:  return item.sourceAppName ?? "File"
         }
     }
 }

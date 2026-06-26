@@ -10,17 +10,17 @@ struct LinkCard: View {
             HStack(spacing: 7) {
                 favicon
                 Text(url?.host ?? "Link")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(DS.Font.title)
                     .lineLimit(1)
             }
             Text(item.textPlain ?? "")
-                .font(.system(size: 10.5))
+                .font(DS.Font.meta)
                 .foregroundStyle(.secondary)
                 .lineLimit(3)
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .padding(11)
+        .padding(DS.Space.md)
     }
 
     @ViewBuilder private var favicon: some View {

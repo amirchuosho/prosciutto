@@ -117,15 +117,12 @@ struct GalleryView: View {
 
     private var panelBackground: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 26, style: .continuous).fill(.ultraThinMaterial)
-            // accent glow pooled at the bottom
-            RadialGradient(colors: [theme.accent.opacity(0.28), .clear],
-                           center: .bottom, startRadius: 4, endRadius: 520)
-                .blendMode(.plusLighter)
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .strokeBorder(
-                    LinearGradient(colors: [.white.opacity(0.16), .white.opacity(0.03)],
-                                   startPoint: .top, endPoint: .bottom), lineWidth: 1)
+            RoundedRectangle(cornerRadius: DS.Radius.panel, style: .continuous).fill(.ultraThinMaterial)
+            // a whisper of accent at the bottom edge, not a wash
+            RadialGradient(colors: [theme.accent.opacity(0.10), .clear],
+                           center: .bottom, startRadius: 4, endRadius: 480)
+            RoundedRectangle(cornerRadius: DS.Radius.panel, style: .continuous)
+                .strokeBorder(.white.opacity(0.10), lineWidth: 1)
         }
         .compositingGroup()
     }
@@ -235,11 +232,11 @@ struct GalleryView: View {
                             .contextMenu { cardMenu(item) }
                     }
                 }
-                .padding(.horizontal, 18).padding(.vertical, 18)
+                .padding(.horizontal, DS.Space.md).padding(.vertical, DS.Space.md)
                 .animation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.82),
                            value: model.items)
             }
-            .frame(height: 300)
+            .frame(height: DS.CardSize.height + 2 * DS.Space.lg)
             .onChange(of: model.selection) { _, _ in scrollToSelection(proxy) }
         }
     }
@@ -294,7 +291,7 @@ struct GalleryView: View {
             Text(model.query.text.isEmpty ? "Nothing copied yet" : "No matches")
                 .font(.callout).foregroundStyle(.secondary)
         }
-        .frame(height: 236)
+        .frame(height: DS.CardSize.height + 2 * DS.Space.lg)
         .frame(maxWidth: .infinity)
     }
 }
