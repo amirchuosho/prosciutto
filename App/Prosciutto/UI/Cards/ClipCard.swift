@@ -64,9 +64,14 @@ struct ClipCard: View {
                         .foregroundStyle(onBand.opacity(0.9))
                     titleView
                     if hovering && !editingTitle {
-                        Image(systemName: "pencil")
-                            .font(.system(size: 9, weight: .semibold))
-                            .foregroundStyle(onBand.opacity(0.55))
+                        Button { startTitleEdit() } label: {
+                            Image(systemName: "pencil")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(onBand.opacity(0.7))
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .help("Rename")
                     }
                 }
                 HStack(spacing: 6) {
