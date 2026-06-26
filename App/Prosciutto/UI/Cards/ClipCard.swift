@@ -41,7 +41,7 @@ struct ClipCard: View {
                               lineWidth: isSelected ? 3 : 1)
         )
         .shadow(color: isSelected ? accent.opacity(0.5) : .black.opacity(scheme == .dark ? 0.4 : 0.12),
-                radius: isSelected ? 24 : 14, y: isSelected ? 12 : 8)
+                radius: isSelected ? 18 : 12, y: isSelected ? 8 : 6)
         .scaleEffect(isSelected ? 1.04 : 1.0)
         .animation(reduceMotion ? nil : .spring(response: 0.26, dampingFraction: 0.8), value: isSelected)
         .animation(reduceMotion ? nil : .easeOut(duration: 0.14), value: hovering)

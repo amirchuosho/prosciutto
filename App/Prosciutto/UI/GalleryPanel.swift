@@ -52,7 +52,7 @@ final class GalleryPanel: NSObject {
     private func targetFrame() -> NSRect? {
         guard let screen = NSScreen.main else { return nil }
         let margin: CGFloat = 18
-        let height: CGFloat = 472
+        let height: CGFloat = 492
         let v = screen.visibleFrame
         return NSRect(x: v.minX + margin, y: v.minY + margin,
                       width: v.width - margin * 2, height: height)
