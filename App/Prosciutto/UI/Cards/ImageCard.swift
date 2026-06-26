@@ -4,7 +4,11 @@ import ProsciuttoKit
 struct ImageCard: View {
     let item: ClipItem
 
-    private var nsImage: NSImage? { item.imageData.flatMap { NSImage(data: $0) } }
+    private var nsImage: NSImage? {
+        if let data = item.imageData { return NSImage(data: data) }
+        if let path = item.textPlain, !path.isEmpty { return NSImage(contentsOfFile: path) }
+        return nil
+    }
 
     var body: some View {
         if let img = nsImage {

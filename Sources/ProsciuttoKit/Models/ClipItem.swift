@@ -18,12 +18,14 @@ public struct ClipItem: Identifiable, Sendable, Equatable {
     public var sectionID: UUID?
     /// Optional user-given name, shown on the card and matched by search.
     public var title: String?
+    /// Manual order among pinned items (lower = earlier). Ignored when unpinned.
+    public var pinOrder: Int
 
     public init(id: UUID, createdAt: Date, lastUsedAt: Date, useCount: Int, kind: ClipKind,
                 textPlain: String? = nil, rtfData: Data? = nil, htmlString: String? = nil,
                 imageData: Data? = nil, sourceAppBundleID: String? = nil, sourceAppName: String? = nil,
                 contentHash: String, isPinned: Bool = false, expiresAt: Date? = nil,
-                sectionID: UUID? = nil, title: String? = nil) {
+                sectionID: UUID? = nil, title: String? = nil, pinOrder: Int = 0) {
         self.id = id
         self.createdAt = createdAt
         self.lastUsedAt = lastUsedAt
@@ -40,6 +42,7 @@ public struct ClipItem: Identifiable, Sendable, Equatable {
         self.expiresAt = expiresAt
         self.sectionID = sectionID
         self.title = title
+        self.pinOrder = pinOrder
     }
 
     public static func make(from snapshot: PasteboardSnapshot, kind: ClipKind,
@@ -48,9 +51,15 @@ public struct ClipItem: Identifiable, Sendable, Equatable {
             ?? snapshot.fileURLs.first.map { Data($0.path.utf8) }
             ?? snapshot.plainText.map { Data($0.utf8) }
             ?? snapshot.rtfData ?? Data()
-        // For file clips, persist the file path as textPlain so the card can
-        // show the name and an image thumbnail.
-        let text = kind == .file ? (snapshot.fileURLs.first?.path ?? snapshot.plainText) : snapshot.plainText
+        // Persist the file path as textPlain for file clips and for image files
+        // (no inline imageData) so the card can show the name / load a preview.
+        let filePath = snapshot.fileURLs.first?.path
+        let text: String?
+        switch kind {
+        case .file:  text = filePath ?? snapshot.plainText
+        case .image: text = snapshot.imageData != nil ? snapshot.plainText : (filePath ?? snapshot.plainText)
+        default:     text = snapshot.plainText
+        }
         return ClipItem(
             id: UUID(), createdAt: now, lastUsedAt: now, useCount: 1, kind: kind,
             textPlain: text, rtfData: snapshot.rtfData, htmlString: snapshot.htmlString,

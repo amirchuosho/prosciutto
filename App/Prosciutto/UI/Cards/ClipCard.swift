@@ -283,7 +283,12 @@ struct ClipCard: View {
         switch item.kind {
         case .text, .rtf, .code: return "\(item.textPlain?.count ?? 0) characters"
         case .link:  return URL(string: item.textPlain ?? "")?.host ?? "Link"
-        case .image: return ByteCountFormatter.string(fromByteCount: Int64(item.imageData?.count ?? 0), countStyle: .file)
+        case .image:
+            if let d = item.imageData {
+                return ByteCountFormatter.string(fromByteCount: Int64(d.count), countStyle: .file)
+            }
+            if let p = item.textPlain { return (p as NSString).lastPathComponent }
+            return "Image"
         case .color: return item.textPlain ?? "Color"
         case .file:  return item.sourceAppName ?? "File"
         }

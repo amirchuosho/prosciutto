@@ -4,8 +4,14 @@ public enum KindDetector {
     private static let colorRegex = try! NSRegularExpression(
         pattern: "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$")
 
+    private static let imageExtensions: Set<String> =
+        ["png", "jpg", "jpeg", "gif", "heic", "heif", "webp", "tiff", "tif", "bmp"]
+
     public static func detect(_ s: PasteboardSnapshot) -> ClipKind? {
-        if !s.fileURLs.isEmpty { return .file }
+        if let file = s.fileURLs.first {
+            // An image file (copied from Finder) is treated as an image, not a file.
+            return imageExtensions.contains(file.pathExtension.lowercased()) ? .image : .file
+        }
         if s.imageData != nil { return .image }
         if let raw = s.plainText {
             let t = raw.trimmingCharacters(in: .whitespacesAndNewlines)

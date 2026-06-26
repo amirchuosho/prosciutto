@@ -15,5 +15,11 @@ final class KindDetectorTests: XCTestCase {
     func testFile() {
         XCTAssertEqual(KindDetector.detect(PasteboardSnapshot(fileURLs: [URL(fileURLWithPath: "/tmp/x")])), .file)
     }
+    func testImageFileDetectedAsImage() {
+        let png = PasteboardSnapshot(fileURLs: [URL(fileURLWithPath: "/tmp/Shot.PNG")])
+        XCTAssertEqual(KindDetector.detect(png), .image)
+        let jpg = PasteboardSnapshot(fileURLs: [URL(fileURLWithPath: "/tmp/pic.jpeg")])
+        XCTAssertEqual(KindDetector.detect(jpg), .image)
+    }
     func testEmpty() { XCTAssertNil(KindDetector.detect(PasteboardSnapshot())) }
 }

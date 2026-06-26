@@ -30,9 +30,10 @@ final class GalleryViewModel: ObservableObject {
 
     func reload() async {
         let all = (try? await store.all()) ?? []
-        // Pinned float to the front, then most-recently-used.
+        // Pinned first (in manual pinOrder), then most-recently-used.
         items = all.sorted { a, b in
-            if a.isPinned != b.isPinned { return a.isPinned && !b.isPinned }
+            if a.isPinned != b.isPinned { return a.isPinned }
+            if a.isPinned && b.isPinned { return a.pinOrder < b.pinOrder }
             return a.lastUsedAt > b.lastUsedAt
         }
         sections = (try? await store.sections()) ?? []
@@ -102,7 +103,28 @@ final class GalleryViewModel: ObservableObject {
     }
 
     func togglePin(_ item: ClipItem) async {
-        try? await store.setPinned(id: item.id, !item.isPinned)
+        var updated = item
+        updated.isPinned.toggle()
+        if updated.isPinned {
+            updated.pinOrder = (items.filter(\.isPinned).map(\.pinOrder).max() ?? -1) + 1
+            updated.expiresAt = nil
+        }
+        try? await store.update(updated)
+        await reload()
+    }
+
+    /// Reorder a pinned item to sit before `targetID` (drag-to-reorder).
+    func movePinned(_ draggedID: UUID, before targetID: UUID) async {
+        guard draggedID != targetID else { return }
+        var pinned = items.filter(\.isPinned).sorted { $0.pinOrder < $1.pinOrder }
+        guard let from = pinned.firstIndex(where: { $0.id == draggedID }) else { return }
+        let moved = pinned.remove(at: from)
+        let insertAt = pinned.firstIndex(where: { $0.id == targetID }) ?? pinned.count
+        pinned.insert(moved, at: insertAt)
+        for (i, p) in pinned.enumerated() where p.pinOrder != i {
+            var u = p; u.pinOrder = i
+            try? await store.update(u)
+        }
         await reload()
     }
 

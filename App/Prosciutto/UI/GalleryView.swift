@@ -253,6 +253,13 @@ struct GalleryView: View {
                             .id(item.id)
                             .transition(.scale(scale: 0.9).combined(with: .opacity))
                             .draggable(item.id.uuidString) { dragPreview(item) }
+                            .dropDestination(for: String.self) { ids, _ in
+                                // Reorder: drop a pinned card onto another pinned card.
+                                guard item.isPinned, let s = ids.first,
+                                      let uuid = UUID(uuidString: s) else { return false }
+                                Task { await model.movePinned(uuid, before: item.id) }
+                                return true
+                            }
                             .onTapGesture {
                                 model.selection = idx
                                 model.pasteSelected()
