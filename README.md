@@ -6,7 +6,7 @@
 
 **A visual, open-source clipboard manager for macOS.**
 
-The delight of Paste+, fully open source.
+Your clipboard history as a fast, beautiful, colour-coded gallery.
 
 [![Platform](https://img.shields.io/badge/platform-macOS%2014%2B-1c1c20)](https://www.apple.com/macos/)
 [![Swift](https://img.shields.io/badge/Swift-5.10-F05138?logo=swift&logoColor=white)](https://swift.org)
@@ -20,9 +20,6 @@ The delight of Paste+, fully open source.
 Prosciutto keeps a rich, visual history of everything you copy. Hit a global hotkey and a
 horizontal gallery of cards slides up from the bottom of your screen, colour-coded by type.
 Scroll, search, pin, and paste, without ever leaving the app you're in.
-
-Built because [Maccy](https://github.com/p0deje/Maccy) is great but minimal, and Paste+ is
-wonderful but closed and paid.
 
 ## Features
 

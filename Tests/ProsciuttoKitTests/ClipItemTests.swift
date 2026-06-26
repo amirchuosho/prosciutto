@@ -13,4 +13,11 @@ final class ClipItemTests: XCTestCase {
         XCTAssertEqual(item.expiresAt, now.addingTimeInterval(60))
         XCTAssertFalse(item.contentHash.isEmpty)
     }
+
+    func testFileStoresPathAsText() {
+        let url = URL(fileURLWithPath: "/tmp/Screenshot.png")
+        let snap = PasteboardSnapshot(fileURLs: [url])
+        let item = ClipItem.make(from: snap, kind: .file, now: Date(), ttl: 60)
+        XCTAssertEqual(item.textPlain, "/tmp/Screenshot.png")
+    }
 }

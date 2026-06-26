@@ -158,14 +158,14 @@ struct GalleryView: View {
             }
             Spacer(minLength: 0)
             Text("⌘1–9 · ⏎ · esc")
-                .font(.system(size: 10, weight: .medium, design: .rounded))
-                .foregroundStyle(.tertiary)
+                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                .foregroundStyle(.secondary)
             Button { model.onDismiss() } label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(.secondary)
-                    .frame(width: 26, height: 26)
-                    .background(Circle().fill(Color.secondary.opacity(0.14)))
+                    .frame(width: 30, height: 30)
+                    .background(Circle().fill(Color.secondary.opacity(0.16)))
                     .contentShape(Circle())
             }
             .buttonStyle(.plain)
@@ -216,6 +216,19 @@ struct GalleryView: View {
         .help(kind.rawValue.capitalized)
     }
 
+    /// Visual break between pinned cards and the rest.
+    private var pinnedDivider: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "pin.fill").font(.system(size: 11, weight: .bold))
+                .foregroundStyle(theme.accent)
+            RoundedRectangle(cornerRadius: 1).fill(DS.hairline(scheme))
+                .frame(width: 2)
+        }
+        .frame(width: 28)
+        .frame(maxHeight: .infinity)
+        .padding(.vertical, 4)
+    }
+
     // MARK: Cards
 
     private var cards: some View {
@@ -224,6 +237,9 @@ struct GalleryView: View {
                 LazyHStack(spacing: DS.Space.lg) {
                     let list = model.filtered()
                     ForEach(Array(list.enumerated()), id: \.element.id) { idx, item in
+                        if idx > 0, list[idx - 1].isPinned, !item.isPinned {
+                            pinnedDivider
+                        }
                         ClipCard(item: item,
                                  index: idx + 1,
                                  isSelected: idx == model.selection,

@@ -26,7 +26,7 @@ struct ClipCard: View {
     private var bandColor: Color { style.color }                 // type colour, always
     private var onBand: Color { bandColor.readableText }
     private var titleLine: String { item.title ?? style.title }
-    private var showActions: Bool { hovering || isSelected }
+    private var showActions: Bool { hovering }
 
     var body: some View {
         VStack(spacing: 0) {

@@ -111,6 +111,12 @@ final class GalleryViewModel: ObservableObject {
         await reload()
     }
 
+    func deleteSelected() async {
+        let list = filtered()
+        guard list.indices.contains(selection) else { return }
+        await delete(list[selection])
+    }
+
     private func cleaned(_ title: String?) -> String? {
         let t = title?.trimmingCharacters(in: .whitespacesAndNewlines)
         return (t?.isEmpty == false) ? t : nil

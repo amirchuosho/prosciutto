@@ -105,6 +105,9 @@ final class AppEnvironment: ObservableObject {
                    event.charactersIgnoringModifiers?.lowercased() == "v" {
                     self.vm.pasteSelected(asPlainText: true); return nil  // ⌘⌥V plain paste
                 }
+                if mods == .command, event.keyCode == 51 {                // ⌘⌫ delete
+                    Task { await self.vm.deleteSelected() }; return nil
+                }
                 return event
             }
 
@@ -115,6 +118,9 @@ final class AppEnvironment: ObservableObject {
             case 124, 125: self.vm.moveSelection(1); return nil    // right / down
             case 36, 76:   self.vm.pasteSelected(); return nil     // return / enter
             case 53:       self.hideGallery(); return nil          // esc
+            case 51:                                               // delete: only when not mid-search
+                if self.vm.query.text.isEmpty { Task { await self.vm.deleteSelected() }; return nil }
+                return event
             default:       return event                             // typing → search
             }
         }

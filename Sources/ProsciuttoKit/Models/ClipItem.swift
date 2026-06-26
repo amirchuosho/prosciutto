@@ -48,9 +48,12 @@ public struct ClipItem: Identifiable, Sendable, Equatable {
             ?? snapshot.fileURLs.first.map { Data($0.path.utf8) }
             ?? snapshot.plainText.map { Data($0.utf8) }
             ?? snapshot.rtfData ?? Data()
+        // For file clips, persist the file path as textPlain so the card can
+        // show the name and an image thumbnail.
+        let text = kind == .file ? (snapshot.fileURLs.first?.path ?? snapshot.plainText) : snapshot.plainText
         return ClipItem(
             id: UUID(), createdAt: now, lastUsedAt: now, useCount: 1, kind: kind,
-            textPlain: snapshot.plainText, rtfData: snapshot.rtfData, htmlString: snapshot.htmlString,
+            textPlain: text, rtfData: snapshot.rtfData, htmlString: snapshot.htmlString,
             imageData: snapshot.imageData,
             sourceAppBundleID: snapshot.sourceAppBundleID, sourceAppName: snapshot.sourceAppName,
             contentHash: ContentHasher.hash(kind: kind, primary: primary),
