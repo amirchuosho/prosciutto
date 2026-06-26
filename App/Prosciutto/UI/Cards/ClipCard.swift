@@ -12,8 +12,12 @@ struct ClipCard: View {
     var onPin: () -> Void = {}
     var onDelete: () -> Void = {}
     var onEdit: (() -> Void)? = nil
+    var onRename: (String) -> Void = { _ in }
 
     @State private var hovering = false
+    @State private var editingTitle = false
+    @State private var titleDraft = ""
+    @FocusState private var titleFocused: Bool
     @Environment(\.colorScheme) private var scheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -57,7 +61,7 @@ struct ClipCard: View {
                 HStack(spacing: 5) {
                     Image(systemName: style.icon).font(.system(size: 11, weight: .bold))
                         .foregroundStyle(onBand.opacity(0.9))
-                    Text(titleLine).font(DS.Font.cardTitle).foregroundStyle(onBand).lineLimit(1)
+                    titleView
                 }
                 HStack(spacing: 6) {
                     Text(relativeTime).font(DS.Font.cardTime).foregroundStyle(onBand.opacity(0.78))
@@ -81,6 +85,39 @@ struct ClipCard: View {
             bandColor
             LinearGradient(colors: [.white.opacity(0.16), .clear], startPoint: .top, endPoint: .center)
         }
+    }
+
+    /// Inline-editable title: click to rename in place, no dialog.
+    @ViewBuilder private var titleView: some View {
+        if editingTitle {
+            TextField(style.title, text: $titleDraft)
+                .textFieldStyle(.plain)
+                .font(DS.Font.cardTitle)
+                .foregroundStyle(onBand)
+                .tint(onBand)
+                .focused($titleFocused)
+                .onSubmit(commitTitle)
+                .onExitCommand { editingTitle = false }
+                .onChange(of: titleFocused) { _, focused in if !focused { commitTitle() } }
+        } else {
+            Button { startTitleEdit() } label: {
+                Text(titleLine).font(DS.Font.cardTitle).foregroundStyle(onBand).lineLimit(1)
+            }
+            .buttonStyle(.plain)
+            .help("Click to rename")
+        }
+    }
+
+    private func startTitleEdit() {
+        titleDraft = item.title ?? ""
+        editingTitle = true
+        titleFocused = true
+    }
+
+    private func commitTitle() {
+        guard editingTitle else { return }
+        editingTitle = false
+        onRename(titleDraft)
     }
 
     /// Distinct colored chip for the section, so section ≠ type colour.

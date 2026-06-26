@@ -9,8 +9,6 @@ struct GalleryView: View {
     @Environment(\.colorScheme) private var scheme
     @State private var editingItem: ClipItem?
     @State private var editingSection: ClipSection?
-    @State private var renamingItem: ClipItem?
-    @State private var renameText = ""
     @State private var showingAddSection = false
     @State private var newSectionName = ""
 
@@ -34,22 +32,11 @@ struct GalleryView: View {
         .preferredColorScheme(theme.colorScheme)
         .onAppear { searchFocused = true }
         .sheet(item: $editingItem) { item in
-            EditSheet(item: item) { newTitle, newText in
-                Task { await model.updateClip(item, title: newTitle, newText: newText) }
+            EditSheet(item: item) { newText in
+                Task { await model.updateText(item, newText: newText) }
             }
             .tint(theme.accent)
             .preferredColorScheme(theme.colorScheme)
-        }
-        .alert("Name this clip", isPresented: Binding(get: { renamingItem != nil },
-                                                      set: { if !$0 { renamingItem = nil } })) {
-            TextField("Title", text: $renameText)
-            Button("Save") {
-                if let it = renamingItem { Task { await model.setTitle(it, renameText) } }
-                renamingItem = nil
-            }
-            Button("Cancel", role: .cancel) { renamingItem = nil }
-        } message: {
-            Text("Give it a searchable name, e.g. “Instagram password”.")
         }
         .sheet(item: $editingSection) { section in
             EditSectionSheet(section: section, palette: model.sectionColors) { name, hex in
@@ -245,7 +232,8 @@ struct GalleryView: View {
                                  section: sectionTag(for: item),
                                  onPin: { Task { await model.togglePin(item) } },
                                  onDelete: { Task { await model.delete(item) } },
-                                 onEdit: editClosure(for: item))
+                                 onEdit: editClosure(for: item),
+                                 onRename: { newTitle in Task { await model.setTitle(item, newTitle) } })
                             .id(item.id)
                             .transition(.scale(scale: 0.9).combined(with: .opacity))
                             .draggable(item.id.uuidString) { dragPreview(item) }
@@ -301,9 +289,6 @@ struct GalleryView: View {
 
     @ViewBuilder private func cardMenu(_ item: ClipItem) -> some View {
         Button(item.isPinned ? "Unpin" : "Pin to front") { Task { await model.togglePin(item) } }
-        Button(item.title == nil ? "Name…" : "Rename…") {
-            renameText = item.title ?? ""; renamingItem = item
-        }
         if editClosure(for: item) != nil {
             Button("Edit…") { editingItem = item }
         }

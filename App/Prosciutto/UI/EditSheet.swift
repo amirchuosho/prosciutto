@@ -3,16 +3,14 @@ import ProsciuttoKit
 
 struct EditSheet: View {
     let item: ClipItem
-    let onSave: (_ title: String?, _ text: String) -> Void
+    let onSave: (_ text: String) -> Void
     @Environment(\.dismiss) private var dismiss
-    @State private var title: String
     @State private var text: String
     @State private var formatError = false
 
-    init(item: ClipItem, onSave: @escaping (_ title: String?, _ text: String) -> Void) {
+    init(item: ClipItem, onSave: @escaping (_ text: String) -> Void) {
         self.item = item
         self.onSave = onSave
-        _title = State(initialValue: item.title ?? "")
         _text = State(initialValue: item.textPlain ?? "")
     }
 
@@ -36,10 +34,6 @@ struct EditSheet: View {
                 }
             }
 
-            TextField("Title (optional) — e.g. “Instagram password”", text: $title)
-                .textFieldStyle(.roundedBorder)
-                .font(.system(size: 13, weight: .medium))
-
             editor
 
             if formatError {
@@ -50,7 +44,7 @@ struct EditSheet: View {
                 Text("\(text.count) characters").font(.caption).foregroundStyle(.tertiary)
                 Spacer()
                 Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
-                Button("Save") { onSave(title, text); dismiss() }
+                Button("Save") { onSave(text); dismiss() }
                     .keyboardShortcut(.defaultAction)
                     .buttonStyle(.borderedProminent)
             }

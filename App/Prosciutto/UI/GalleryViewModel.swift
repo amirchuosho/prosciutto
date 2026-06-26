@@ -121,10 +121,9 @@ final class GalleryViewModel: ObservableObject {
         await reload()
     }
 
-    /// Edit body text (+ optional title); recomputes the content hash.
-    func updateClip(_ item: ClipItem, title: String?, newText: String) async {
+    /// Edit body text (title preserved); recomputes the content hash.
+    func updateText(_ item: ClipItem, newText: String) async {
         var updated = item
-        updated.title = cleaned(title)
         updated.textPlain = newText
         updated.rtfData = nil
         updated.htmlString = nil
