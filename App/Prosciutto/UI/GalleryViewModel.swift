@@ -108,8 +108,23 @@ final class GalleryViewModel: ObservableObject {
         await reload()
     }
 
-    func updateText(_ item: ClipItem, newText: String) async {
+    private func cleaned(_ title: String?) -> String? {
+        let t = title?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return (t?.isEmpty == false) ? t : nil
+    }
+
+    /// Set just the custom title (any kind, including images/files).
+    func setTitle(_ item: ClipItem, _ title: String?) async {
         var updated = item
+        updated.title = cleaned(title)
+        try? await store.update(updated)
+        await reload()
+    }
+
+    /// Edit body text (+ optional title); recomputes the content hash.
+    func updateClip(_ item: ClipItem, title: String?, newText: String) async {
+        var updated = item
+        updated.title = cleaned(title)
         updated.textPlain = newText
         updated.rtfData = nil
         updated.htmlString = nil

@@ -15,6 +15,7 @@
         <attribute name="sourceAppBundleID" optional="YES" attributeType="String"/>
         <attribute name="sourceAppName" optional="YES" attributeType="String"/>
         <attribute name="textPlain" optional="YES" attributeType="String"/>
+        <attribute name="title" optional="YES" attributeType="String"/>
         <attribute name="useCount" attributeType="Integer 64" defaultValueString="1" usesScalarValueType="YES"/>
         <fetchIndex name="byContentHash">
             <fetchIndexElement property="contentHash" type="Binary" order="ascending"/>

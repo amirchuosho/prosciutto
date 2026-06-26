@@ -12,7 +12,9 @@ public struct ClipQuery: Sendable {
             if !kinds.isEmpty && !kinds.contains(item.kind) { return false }
             if let app = sourceAppBundleID, item.sourceAppBundleID != app { return false }
             if !needle.isEmpty {
-                let hay = (item.textPlain ?? "").lowercased()
+                let hay = [item.title, item.textPlain]
+                    .compactMap { $0?.lowercased() }
+                    .joined(separator: "\n")
                 if !hay.contains(needle) { return false }
             }
             return true

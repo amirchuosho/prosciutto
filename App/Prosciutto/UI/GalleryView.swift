@@ -9,6 +9,8 @@ struct GalleryView: View {
     @Environment(\.colorScheme) private var scheme
     @State private var editingItem: ClipItem?
     @State private var editingSection: ClipSection?
+    @State private var renamingItem: ClipItem?
+    @State private var renameText = ""
     @State private var showingAddSection = false
     @State private var newSectionName = ""
 
@@ -32,11 +34,22 @@ struct GalleryView: View {
         .preferredColorScheme(theme.colorScheme)
         .onAppear { searchFocused = true }
         .sheet(item: $editingItem) { item in
-            EditSheet(item: item) { newText in
-                Task { await model.updateText(item, newText: newText) }
+            EditSheet(item: item) { newTitle, newText in
+                Task { await model.updateClip(item, title: newTitle, newText: newText) }
             }
             .tint(theme.accent)
             .preferredColorScheme(theme.colorScheme)
+        }
+        .alert("Name this clip", isPresented: Binding(get: { renamingItem != nil },
+                                                      set: { if !$0 { renamingItem = nil } })) {
+            TextField("Title", text: $renameText)
+            Button("Save") {
+                if let it = renamingItem { Task { await model.setTitle(it, renameText) } }
+                renamingItem = nil
+            }
+            Button("Cancel", role: .cancel) { renamingItem = nil }
+        } message: {
+            Text("Give it a searchable name, e.g. “Instagram password”.")
         }
         .sheet(item: $editingSection) { section in
             EditSectionSheet(section: section, palette: model.sectionColors) { name, hex in
@@ -229,7 +242,7 @@ struct GalleryView: View {
                                  isSelected: idx == model.selection,
                                  accent: theme.accent,
                                  accentGradient: theme.accentGradient,
-                                 headerColor: sectionColor(for: item),
+                                 section: sectionTag(for: item),
                                  onPin: { Task { await model.togglePin(item) } },
                                  onDelete: { Task { await model.delete(item) } },
                                  onEdit: editClosure(for: item))
@@ -278,15 +291,19 @@ struct GalleryView: View {
         item.kind.isEditable ? { editingItem = item } : nil
     }
 
-    /// A filed card takes its section's colour (Paste pinboards); else kind colour.
-    private func sectionColor(for item: ClipItem) -> Color? {
+    /// The section a card is filed in, as a (name, colour) tag. Type stays the
+    /// header colour; the section shows as a separate tag.
+    private func sectionTag(for item: ClipItem) -> (name: String, color: Color)? {
         guard let id = item.sectionID,
               let s = model.sections.first(where: { $0.id == id }) else { return nil }
-        return Color(hex: s.colorHex)
+        return (s.name, Color(hex: s.colorHex) ?? .gray)
     }
 
     @ViewBuilder private func cardMenu(_ item: ClipItem) -> some View {
         Button(item.isPinned ? "Unpin" : "Pin to front") { Task { await model.togglePin(item) } }
+        Button(item.title == nil ? "Name…" : "Rename…") {
+            renameText = item.title ?? ""; renamingItem = item
+        }
         if editClosure(for: item) != nil {
             Button("Edit…") { editingItem = item }
         }

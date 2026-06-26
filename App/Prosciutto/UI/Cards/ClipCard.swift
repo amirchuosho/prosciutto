@@ -7,8 +7,8 @@ struct ClipCard: View {
     var isSelected: Bool = false
     var accent: Color = .accentColor
     var accentGradient: LinearGradient = LinearGradient(colors: [.accentColor], startPoint: .top, endPoint: .bottom)
-    /// Overrides the header colour (used for section colours); nil = kind colour.
-    var headerColor: Color? = nil
+    /// The section this card is filed in, shown as a tag. Type stays the header colour.
+    var section: (name: String, color: Color)? = nil
     var onPin: () -> Void = {}
     var onDelete: () -> Void = {}
     var onEdit: (() -> Void)? = nil
@@ -18,8 +18,9 @@ struct ClipCard: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var style: KindStyle { KindStyle.of(item.kind) }
-    private var bandColor: Color { headerColor ?? style.color }
+    private var bandColor: Color { style.color }                 // type colour, always
     private var onBand: Color { bandColor.readableText }
+    private var titleLine: String { item.title ?? style.title }
     private var showActions: Bool { hovering || isSelected }
 
     var body: some View {
@@ -52,9 +53,16 @@ struct ClipCard: View {
 
     private var header: some View {
         HStack(alignment: .top, spacing: DS.Space.sm) {
-            VStack(alignment: .leading, spacing: 1) {
-                Text(style.title).font(DS.Font.cardTitle).foregroundStyle(onBand)
-                Text(relativeTime).font(DS.Font.cardTime).foregroundStyle(onBand.opacity(0.78))
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 5) {
+                    Image(systemName: style.icon).font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(onBand.opacity(0.9))
+                    Text(titleLine).font(DS.Font.cardTitle).foregroundStyle(onBand).lineLimit(1)
+                }
+                HStack(spacing: 6) {
+                    Text(relativeTime).font(DS.Font.cardTime).foregroundStyle(onBand.opacity(0.78))
+                    if let section { sectionTag(section) }
+                }
             }
             Spacer(minLength: 0)
             HStack(spacing: 5) {
@@ -66,14 +74,24 @@ struct ClipCard: View {
             }
         }
         .padding(.horizontal, DS.Space.md)
-        .padding(.vertical, DS.Space.sm + 2)
+        .padding(.vertical, DS.Space.sm + 1)
         .frame(height: DS.CardSize.header)
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .background {
             bandColor
-            // glossy top sheen for depth
             LinearGradient(colors: [.white.opacity(0.16), .clear], startPoint: .top, endPoint: .center)
         }
+    }
+
+    /// Distinct colored chip for the section, so section ≠ type colour.
+    private func sectionTag(_ s: (name: String, color: Color)) -> some View {
+        HStack(spacing: 3) {
+            Circle().fill(s.color.readableText.opacity(0.9)).frame(width: 5, height: 5)
+            Text(s.name).font(.system(size: 10, weight: .semibold)).lineLimit(1)
+        }
+        .foregroundStyle(s.color.readableText)
+        .padding(.horizontal, 6).padding(.vertical, 2)
+        .background(Capsule().fill(s.color))
     }
 
     @ViewBuilder private var appIcon: some View {

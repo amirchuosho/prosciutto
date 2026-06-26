@@ -96,6 +96,7 @@ final class CoreDataClipStore: ClipStore {
         cd.isPinned = i.isPinned
         cd.expiresAt = i.expiresAt
         cd.sectionID = i.sectionID
+        cd.title = i.title
     }
 
     private static func read(_ cd: CDClipItem) -> ClipItem {
@@ -114,7 +115,8 @@ final class CoreDataClipStore: ClipStore {
             contentHash: cd.contentHash ?? "",
             isPinned: cd.isPinned,
             expiresAt: cd.expiresAt,
-            sectionID: cd.sectionID)
+            sectionID: cd.sectionID,
+            title: cd.title)
     }
 
     // MARK: Sections

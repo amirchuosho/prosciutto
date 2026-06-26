@@ -3,14 +3,16 @@ import ProsciuttoKit
 
 struct EditSheet: View {
     let item: ClipItem
-    let onSave: (String) -> Void
+    let onSave: (_ title: String?, _ text: String) -> Void
     @Environment(\.dismiss) private var dismiss
+    @State private var title: String
     @State private var text: String
     @State private var formatError = false
 
-    init(item: ClipItem, onSave: @escaping (String) -> Void) {
+    init(item: ClipItem, onSave: @escaping (_ title: String?, _ text: String) -> Void) {
         self.item = item
         self.onSave = onSave
+        _title = State(initialValue: item.title ?? "")
         _text = State(initialValue: item.textPlain ?? "")
     }
 
@@ -28,13 +30,15 @@ struct EditSheet: View {
                     Button {
                         if let pretty = Self.prettyJSON(text) { text = pretty; formatError = false }
                         else { formatError = true }
-                    } label: {
-                        Label("Format JSON", systemImage: "curlybraces")
-                    }
+                    } label: { Label("Format JSON", systemImage: "curlybraces") }
                     .disabled(!canFormatJSON && !formatError)
                     .help(canFormatJSON ? "Pretty-print JSON" : "Not valid JSON")
                 }
             }
+
+            TextField("Title (optional) — e.g. “Instagram password”", text: $title)
+                .textFieldStyle(.roundedBorder)
+                .font(.system(size: 13, weight: .medium))
 
             editor
 
@@ -46,7 +50,7 @@ struct EditSheet: View {
                 Text("\(text.count) characters").font(.caption).foregroundStyle(.tertiary)
                 Spacer()
                 Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
-                Button("Save") { onSave(text); dismiss() }
+                Button("Save") { onSave(title, text); dismiss() }
                     .keyboardShortcut(.defaultAction)
                     .buttonStyle(.borderedProminent)
             }
@@ -69,8 +73,7 @@ struct EditSheet: View {
     static func prettyJSON(_ s: String) -> String? {
         let trimmed = s.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let data = trimmed.data(using: .utf8),
-              let obj = try? JSONSerialization.jsonObject(with: data,
-                        options: [.fragmentsAllowed]),
+              let obj = try? JSONSerialization.jsonObject(with: data, options: [.fragmentsAllowed]),
               let out = try? JSONSerialization.data(withJSONObject: obj,
                         options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]),
               let str = String(data: out, encoding: .utf8) else { return nil }

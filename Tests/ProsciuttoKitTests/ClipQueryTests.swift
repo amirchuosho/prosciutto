@@ -18,6 +18,15 @@ final class ClipQueryTests: XCTestCase {
         let items = [mk("a", kind: .text), mk("b", kind: .image)]
         XCTAssertEqual(q.apply(to: items).count, 1)
     }
+    func testMatchesTitle() {
+        var item = mk("123456", kind: .text)
+        item.title = "Instagram password"
+        var q = ClipQuery(); q.text = "instagram"
+        XCTAssertEqual(q.apply(to: [item]).count, 1)
+        // and the body still doesn't match "instagram"
+        var q2 = ClipQuery(); q2.text = "instagram"
+        XCTAssertEqual(q2.apply(to: [mk("123456", kind: .text)]).count, 0)
+    }
     func testEmptyQueryReturnsAll() {
         let items = [mk("a", kind: .text), mk("b", kind: .image)]
         XCTAssertEqual(ClipQuery().apply(to: items).count, 2)
