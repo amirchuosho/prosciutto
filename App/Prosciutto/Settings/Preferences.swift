@@ -16,6 +16,15 @@ final class Preferences {
         static let appearance = "theme.appearance"
         static let accentTheme = "theme.accent"
         static let customAccentHex = "theme.customAccentHex"
+        static let openKeyCode = "hotkey.open.keyCode"
+        static let openModifiers = "hotkey.open.modifiers"
+        static let plainKeyCode = "hotkey.plain.keyCode"
+        static let plainModifiers = "hotkey.plain.modifiers"
+        static let saveText = "capture.saveText"
+        static let saveImages = "capture.saveImages"
+        static let saveFiles = "capture.saveFiles"
+        static let maxItemSizeBytes = "capture.maxItemSizeBytes"
+        static let useFuzzySearch = "search.useFuzzy"
     }
 
     var appearanceRaw: String {
@@ -78,4 +87,53 @@ final class Preferences {
     var retentionPolicy: RetentionPolicy {
         RetentionPolicy(maxItems: maxItems, maxAge: TimeInterval(maxAgeDays) * 86_400)
     }
+
+    // Hotkeys are stored as keyCode + Cocoa NSEvent.ModifierFlags rawValue.
+    // Defaults: open = ⌘⇧V, plain-paste = ⌘⌥V (kVK_ANSI_V == 9).
+    var openHotkeyKeyCode: Int {
+        get { defaults.object(forKey: Keys.openKeyCode) as? Int ?? 9 }
+        set { defaults.set(newValue, forKey: Keys.openKeyCode) }
+    }
+    var openHotkeyModifiers: Int {
+        get { defaults.object(forKey: Keys.openModifiers) as? Int ?? Preferences.defaultCmdShift }
+        set { defaults.set(newValue, forKey: Keys.openModifiers) }
+    }
+    var plainPasteKeyCode: Int {
+        get { defaults.object(forKey: Keys.plainKeyCode) as? Int ?? 9 }
+        set { defaults.set(newValue, forKey: Keys.plainKeyCode) }
+    }
+    var plainPasteModifiers: Int {
+        get { defaults.object(forKey: Keys.plainModifiers) as? Int ?? Preferences.defaultCmdOption }
+        set { defaults.set(newValue, forKey: Keys.plainModifiers) }
+    }
+    var saveText: Bool {
+        get { defaults.object(forKey: Keys.saveText) as? Bool ?? true }
+        set { defaults.set(newValue, forKey: Keys.saveText) }
+    }
+    var saveImages: Bool {
+        get { defaults.object(forKey: Keys.saveImages) as? Bool ?? true }
+        set { defaults.set(newValue, forKey: Keys.saveImages) }
+    }
+    var saveFiles: Bool {
+        get { defaults.object(forKey: Keys.saveFiles) as? Bool ?? true }
+        set { defaults.set(newValue, forKey: Keys.saveFiles) }
+    }
+    var maxItemSizeBytes: Int {
+        get { defaults.object(forKey: Keys.maxItemSizeBytes) as? Int ?? 0 }   // 0 = no limit
+        set { defaults.set(newValue, forKey: Keys.maxItemSizeBytes) }
+    }
+    var useFuzzySearch: Bool {
+        get { defaults.bool(forKey: Keys.useFuzzySearch) }                     // default false
+        set { defaults.set(newValue, forKey: Keys.useFuzzySearch) }
+    }
+
+    var captureFilter: CaptureFilter {
+        CaptureFilter.from(saveText: saveText, saveImages: saveImages,
+                           saveFiles: saveFiles, maxBytes: maxItemSizeBytes)
+    }
+
+    // NSEvent.ModifierFlags rawValues (avoids importing AppKit here):
+    // .command = 1<<20 = 1_048_576, .shift = 1<<17 = 131_072, .option = 1<<19 = 524_288
+    static let defaultCmdShift = 1_048_576 | 131_072
+    static let defaultCmdOption = 1_048_576 | 524_288
 }
