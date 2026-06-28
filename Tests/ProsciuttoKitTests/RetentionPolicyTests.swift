@@ -29,4 +29,16 @@ final class RetentionPolicyTests: XCTestCase {
         let items = (0..<5).map { item("i\($0)", age: TimeInterval($0), pinned: false, now: now) }
         XCTAssertEqual(p.survivors(of: items, now: now).count, 2)
     }
+    func testMaxAgeZeroNeverExpires() {
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        let p = RetentionPolicy(maxItems: 100, maxAge: 0)
+        let items = [item("ancient", age: 9_999_999, pinned: false, now: now)]
+        XCTAssertEqual(p.survivors(of: items, now: now).count, 1)
+    }
+    func testMaxItemsZeroKeepsAll() {
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        let p = RetentionPolicy(maxItems: 0, maxAge: 999_999)
+        let items = (0..<50).map { item("i\($0)", age: TimeInterval($0), pinned: false, now: now) }
+        XCTAssertEqual(p.survivors(of: items, now: now).count, 50)
+    }
 }

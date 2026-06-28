@@ -11,9 +11,13 @@ public struct RetentionPolicy: Sendable {
     public func survivors(of items: [ClipItem], now: Date) -> [ClipItem] {
         let pinned = items.filter { $0.isPinned }
         var unpinned = items.filter { !$0.isPinned }
-            .filter { now.timeIntervalSince($0.lastUsedAt) <= maxAge }
-            .sorted { $0.lastUsedAt > $1.lastUsedAt }
-        if unpinned.count > maxItems { unpinned = Array(unpinned.prefix(maxItems)) }
+        if maxAge > 0 {
+            unpinned = unpinned.filter { now.timeIntervalSince($0.lastUsedAt) <= maxAge }
+        }
+        unpinned.sort { $0.lastUsedAt > $1.lastUsedAt }
+        if maxItems > 0, unpinned.count > maxItems {
+            unpinned = Array(unpinned.prefix(maxItems))
+        }
         return pinned + unpinned
     }
 }
