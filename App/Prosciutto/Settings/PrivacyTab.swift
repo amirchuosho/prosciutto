@@ -11,8 +11,11 @@ struct PrivacyTab: View {
 
     private var addableApps: [NSRunningApplication] {
         NSWorkspace.shared.runningApplications
-            .filter { $0.activationPolicy == .regular && $0.bundleIdentifier != nil }
-            .filter { !blocked.contains($0.bundleIdentifier!) }
+            .filter { $0.activationPolicy == .regular }
+            .filter { app in
+                guard let id = app.bundleIdentifier else { return false }
+                return !blocked.contains(id)
+            }
             .sorted { ($0.localizedName ?? "") < ($1.localizedName ?? "") }
     }
 
@@ -39,7 +42,7 @@ struct PrivacyTab: View {
             Section {
                 Menu("Add app…") {
                     ForEach(addableApps, id: \.bundleIdentifier) { app in
-                        Button(app.localizedName ?? app.bundleIdentifier!) {
+                        Button(app.localizedName ?? app.bundleIdentifier ?? "") {
                             if let id = app.bundleIdentifier, !blocked.contains(id) {
                                 blocked.append(id); blocked.sort(); persist()
                             }
@@ -54,9 +57,8 @@ struct PrivacyTab: View {
     }
 
     private func appName(for bundleID: String) -> String {
-        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID),
-           let name = FileManager.default.displayName(atPath: url.path) as String? {
-            return name.replacingOccurrences(of: ".app", with: "")
+        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
+            return url.deletingPathExtension().lastPathComponent
         }
         return bundleID
     }
