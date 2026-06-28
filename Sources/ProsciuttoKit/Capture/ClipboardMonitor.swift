@@ -7,7 +7,7 @@ public final class ClipboardMonitor {
     private let clock: Clock
     private let ttl: TimeInterval
     private var lastChangeCount: Int
-    private var timer: Timer?
+    private var pollingTask: Task<Void, Never>?
     public var isPaused = false
     /// Fired after a new item is captured and stored.
     public var onCapture: (() -> Void)?
@@ -34,15 +34,21 @@ public final class ClipboardMonitor {
         onCapture?()
     }
 
+    /// Polls on a single serialized loop. Each poll (including the async store
+    /// write) completes before the next begins, so overlapping polls can't
+    /// double-process the same pasteboard change.
     public func start(interval: TimeInterval) {
-        timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
-            guard let self else { return }
-            Task { try? await self.poll() }
+        pollingTask?.cancel()
+        pollingTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await self?.poll()
+                try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
+            }
         }
     }
 
     public func stop() {
-        timer?.invalidate()
-        timer = nil
+        pollingTask?.cancel()
+        pollingTask = nil
     }
 }

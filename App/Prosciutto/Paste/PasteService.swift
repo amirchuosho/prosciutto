@@ -7,7 +7,15 @@ final class PasteService {
         pb.clearContents()
         switch item.kind {
         case .image:
-            if let d = item.imageData { pb.setData(d, forType: .png) }
+            if let d = item.imageData {
+                pb.setData(d, forType: .png)
+            } else if let path = item.textPlain {
+                // File-backed image: write the file URL (so Finder/apps get the
+                // file) plus its pixels (so editors get the image).
+                let url = URL(fileURLWithPath: path)
+                pb.writeObjects([url as NSURL])
+                if let d = try? Data(contentsOf: url) { pb.setData(d, forType: .png) }
+            }
         case .file:
             if let t = item.textPlain { pb.setString(t, forType: .string) }
         default:

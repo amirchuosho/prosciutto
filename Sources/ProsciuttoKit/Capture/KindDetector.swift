@@ -18,6 +18,7 @@ public enum KindDetector {
             guard !t.isEmpty else { return s.rtfData != nil ? .rtf : nil }
             if isColor(t) { return .color }
             if isURL(t) { return .link }
+            if isJSONObjectOrArray(t) { return .code }
             if looksLikeCode(t) { return .code }
             return .text
         }
@@ -34,6 +35,14 @@ public enum KindDetector {
         guard !t.contains(" "), !t.contains("\n") else { return false }
         guard let u = URL(string: t), let scheme = u.scheme else { return false }
         return scheme == "http" || scheme == "https"
+    }
+
+    /// True for a JSON object/array (not bare scalars). JSON is treated as code
+    /// so it renders monospaced and gets the Format action.
+    static func isJSONObjectOrArray(_ t: String) -> Bool {
+        guard t.hasPrefix("{") || t.hasPrefix("["),
+              let d = t.data(using: .utf8) else { return false }
+        return (try? JSONSerialization.jsonObject(with: d)) != nil   // no fragments
     }
 
     static func looksLikeCode(_ t: String) -> Bool {

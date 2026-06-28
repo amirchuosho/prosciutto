@@ -9,6 +9,16 @@ final class KindDetectorTests: XCTestCase {
     func testLink() { XCTAssertEqual(KindDetector.detect(snap("https://github.com/p0deje/Maccy")), .link) }
     func testPlainText() { XCTAssertEqual(KindDetector.detect(snap("just some words here")), .text) }
     func testCode() { XCTAssertEqual(KindDetector.detect(snap("func foo() { return 1 }")), .code) }
+    func testMinifiedJSONObjectIsCode() {
+        XCTAssertEqual(KindDetector.detect(snap("{\"a\":1,\"b\":[2,3]}")), .code)
+    }
+    func testJSONArrayIsCode() {
+        XCTAssertEqual(KindDetector.detect(snap("[1, 2, 3]")), .code)
+    }
+    func testJSONScalarIsNotCode() {
+        // A bare string/number is valid JSON-with-fragments but must not be code.
+        XCTAssertEqual(KindDetector.detect(snap("hello world")), .text)
+    }
     func testImage() {
         XCTAssertEqual(KindDetector.detect(PasteboardSnapshot(imageData: Data([0x89, 0x50]))), .image)
     }

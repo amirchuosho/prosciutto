@@ -20,4 +20,24 @@ final class ClipItemTests: XCTestCase {
         let item = ClipItem.make(from: snap, kind: .file, now: Date(), ttl: 60)
         XCTAssertEqual(item.textPlain, "/tmp/Screenshot.png")
     }
+
+    // An image FILE copied from Finder carries the file's ICON as pasteboard
+    // .png/.tiff. We must NOT keep that icon as imageData; the card renders the
+    // real file from the path instead. Otherwise it shows the grey doc icon.
+    func testImageFileDropsIconDataAndKeepsPath() {
+        let url = URL(fileURLWithPath: "/tmp/photo.png")
+        let icon = Data([0x89, 0x50, 0x4E, 0x47]) // bogus "icon" bytes
+        let snap = PasteboardSnapshot(imageData: icon, fileURLs: [url])
+        let item = ClipItem.make(from: snap, kind: .image, now: Date(), ttl: 60)
+        XCTAssertNil(item.imageData, "icon data must be dropped for image files")
+        XCTAssertEqual(item.textPlain, "/tmp/photo.png")
+    }
+
+    // A real image-DATA clip (screenshot, no file) keeps its imageData.
+    func testImageDataClipKeepsData() {
+        let bytes = Data([1, 2, 3, 4])
+        let snap = PasteboardSnapshot(imageData: bytes)
+        let item = ClipItem.make(from: snap, kind: .image, now: Date(), ttl: 60)
+        XCTAssertEqual(item.imageData, bytes)
+    }
 }

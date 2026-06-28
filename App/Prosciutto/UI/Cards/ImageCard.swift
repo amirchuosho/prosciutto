@@ -12,9 +12,16 @@ struct ImageCard: View {
 
     var body: some View {
         if let img = nsImage {
-            Image(nsImage: img)
-                .resizable()
-                .aspectRatio(contentMode: .fill)
+            // Drive the size from a flexible Color.clear so the image (especially
+            // one loaded via NSImage(contentsOfFile:), which carries an intrinsic
+            // size) can never impose its own dimensions on the card layout and
+            // push the header/footer out. The image is overlaid and clipped.
+            Color.clear
+                .overlay {
+                    Image(nsImage: img)
+                        .resizable()
+                        .scaledToFill()
+                }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .clipped()
                 .overlay(alignment: .bottom) {

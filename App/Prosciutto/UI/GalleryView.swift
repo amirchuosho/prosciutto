@@ -240,7 +240,8 @@ struct GalleryView: View {
                             pinnedDivider
                         }
                         ClipCard(item: item,
-                                 index: idx + 1,
+                                 index: model.slot(for: item),
+                                 slotCount: model.slotCount,
                                  isSelected: idx == model.selection,
                                  accent: theme.accent,
                                  accentGradient: theme.accentGradient,
@@ -249,17 +250,11 @@ struct GalleryView: View {
                                  onDelete: { Task { await model.delete(item) } },
                                  onRename: { newTitle in Task { await model.setTitle(item, newTitle) } },
                                  onEditBody: { newText in Task { await model.updateText(item, newText: newText) } },
+                                 onAssignSlot: { n in Task { await model.assignSlot(item, slot: n) } },
                                  onEditingChanged: { model.isEditingTitle = $0 })
                             .id(item.id)
                             .transition(.scale(scale: 0.9).combined(with: .opacity))
                             .draggable(item.id.uuidString) { dragPreview(item) }
-                            .dropDestination(for: String.self) { ids, _ in
-                                // Reorder: drop a pinned card onto another pinned card.
-                                guard item.isPinned, let s = ids.first,
-                                      let uuid = UUID(uuidString: s) else { return false }
-                                Task { await model.movePinned(uuid, before: item.id) }
-                                return true
-                            }
                             .onTapGesture {
                                 model.selection = idx
                                 model.pasteSelected()

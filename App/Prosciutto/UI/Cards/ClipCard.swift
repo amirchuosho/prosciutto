@@ -3,7 +3,11 @@ import ProsciuttoKit
 
 struct ClipCard: View {
     let item: ClipItem
+    /// Quick-paste slot (1–9) this card occupies, or nil if it isn't pinned.
+    /// Only pinned cards get a number bubble.
     let index: Int?
+    /// Total assignable slots (= pinned count, capped at 9). Bounds the picker.
+    var slotCount: Int = 0
     var isSelected: Bool = false
     var accent: Color = .accentColor
     var accentGradient: LinearGradient = LinearGradient(colors: [.accentColor], startPoint: .top, endPoint: .bottom)
@@ -13,9 +17,12 @@ struct ClipCard: View {
     var onDelete: () -> Void = {}
     var onRename: (String) -> Void = { _ in }
     var onEditBody: (String) -> Void = { _ in }
+    /// Assign this card to quick-paste slot 1–9 (from the footer slot picker).
+    var onAssignSlot: (Int) -> Void = { _ in }
     var onEditingChanged: (Bool) -> Void = { _ in }
 
     @State private var hovering = false
+    @State private var pickingSlot = false
     @State private var editingTitle = false
     @State private var titleDraft = ""
     @FocusState private var titleFocused: Bool
@@ -30,6 +37,14 @@ struct ClipCard: View {
     private var onBand: Color { bandColor.readableText }
     private var titleLine: String { item.title ?? style.title }
     private var showActions: Bool { hovering }
+
+    /// Pretty-printed JSON for a code card whose content is valid JSON and not
+    /// already formatted; nil otherwise (the Format action is hidden then).
+    private var formattableJSON: String? {
+        guard item.kind == .code, let raw = item.textPlain,
+              let pretty = JSONTools.pretty(raw), pretty != raw else { return nil }
+        return pretty
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -54,7 +69,10 @@ struct ClipCard: View {
         .scaleEffect(isSelected ? 1.04 : 1.0)
         .animation(reduceMotion ? nil : .spring(response: 0.26, dampingFraction: 0.8), value: isSelected)
         .animation(reduceMotion ? nil : .easeOut(duration: 0.14), value: hovering)
-        .onHover { hovering = $0 }
+        .onHover { h in
+            hovering = h
+            if !h { withAnimation(.spring(response: 0.3, dampingFraction: 0.78)) { pickingSlot = false } }
+        }
     }
 
     // MARK: Header band
@@ -170,21 +188,71 @@ struct ClipCard: View {
     // MARK: Footer
 
     private var footer: some View {
-        HStack(spacing: DS.Space.sm) {
-            Text(meta).font(DS.Font.meta).foregroundStyle(DS.footerMeta(scheme)).lineLimit(1)
-            Spacer(minLength: 0)
-            if let index, index <= 9 {
-                Text("\(index)")
-                    .font(DS.Font.shortcut)
-                    .foregroundStyle(isSelected ? accent : DS.footerMeta(scheme))
-                    .frame(width: 17, height: 17)
-                    .background(Circle().fill(isSelected ? accent.opacity(0.18)
-                                                          : Color.primary.opacity(0.08)))
+        ZStack {
+            HStack(spacing: DS.Space.sm) {
+                Text(meta).font(DS.Font.meta).foregroundStyle(DS.footerMeta(scheme))
+                    .lineLimit(1).truncationMode(.middle)
+                Spacer(minLength: 0)
+                if index != nil { slotChip }          // only pinned cards have a slot
             }
+            .opacity(pickingSlot ? 0 : 1)
+
+            if index != nil { slotPicker.allowsHitTesting(pickingSlot) }
         }
         .padding(.horizontal, DS.Space.md)
         .padding(.vertical, DS.Space.sm)
         .overlay(alignment: .top) { Rectangle().fill(DS.hairline(scheme)).frame(height: 1) }
+    }
+
+    /// The slot bubble (only on pinned cards). Shows the card's ⌘-number; tap to
+    /// open the picker and move it to a different slot.
+    private var slotChip: some View {
+        Button {
+            withAnimation(.spring(response: 0.34, dampingFraction: 0.7)) { pickingSlot = true }
+        } label: {
+            Text(index.map(String.init) ?? "")
+                .font(DS.Font.shortcut)
+                .foregroundStyle(isSelected ? accent : DS.footerMeta(scheme))
+                .frame(width: 18, height: 18)
+                .background(Circle().fill(isSelected ? accent.opacity(0.18)
+                                                     : Color.primary.opacity(0.08)))
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .help("Move to a different ⌘-slot")
+    }
+
+    /// Circles 1…n (n = pinned count) fly out across the footer with a staggered
+    /// spring, cascading from the chip (right) outward. Tapping one moves this
+    /// card to that slot.
+    private var slotPicker: some View {
+        let count = max(1, slotCount)
+        return HStack(spacing: 4) {
+            ForEach(1...count, id: \.self) { n in
+                let isCurrent = index == n
+                Button {
+                    onAssignSlot(n)
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.78)) { pickingSlot = false }
+                } label: {
+                    Text("\(n)")
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundStyle(isCurrent ? .white : .primary.opacity(0.7))
+                        .frame(width: 20, height: 20)
+                        .background(
+                            Circle().fill(isCurrent ? AnyShapeStyle(accentGradient)
+                                                     : AnyShapeStyle(Color.primary.opacity(0.08))))
+                        .overlay(Circle().strokeBorder(isCurrent ? AnyShapeStyle(accentGradient)
+                                                                 : AnyShapeStyle(Color.clear),
+                                                       lineWidth: 1.5))
+                }
+                .buttonStyle(.plain)
+                .scaleEffect(pickingSlot ? 1 : 0.1)
+                .opacity(pickingSlot ? 1 : 0)
+                .animation(.spring(response: 0.36, dampingFraction: 0.66)
+                            .delay(Double(count - n) * 0.03), value: pickingSlot)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .trailing)
     }
 
     // MARK: Actions
@@ -192,6 +260,7 @@ struct ClipCard: View {
     private var actionBar: some View {
         HStack(spacing: 2) {
             actionButton(item.isPinned ? "pin.slash.fill" : "pin.fill", onPin)
+            if let pretty = formattableJSON { actionButton("curlybraces") { onEditBody(pretty) } }
             if item.kind.isEditable { actionButton("pencil") { startBodyEdit() } }
             actionButton("trash.fill", onDelete, destructive: true)
         }

@@ -96,10 +96,28 @@ final class GalleryViewModel: ObservableObject {
         onPaste(list[selection], asPlainText)
     }
 
+    /// Pinned cards in slot order. The slot a card occupies (its ⌘-number) is its
+    /// rank here — stable across every section view, never a position in the
+    /// current filter.
+    var pinnedSlots: [ClipItem] { items.filter(\.isPinned).sorted { $0.pinOrder < $1.pinOrder } }
+
+    /// Number of assignable quick-slots (capped at 9, the ⌘-key range).
+    var slotCount: Int { min(pinnedSlots.count, 9) }
+
+    /// The quick-paste slot (1–9) a card occupies, or nil if it isn't pinned /
+    /// is beyond slot 9. Same value in All and in any section.
+    func slot(for item: ClipItem) -> Int? {
+        guard item.isPinned, let r = pinnedSlots.firstIndex(where: { $0.id == item.id }), r < 9
+        else { return nil }
+        return r + 1
+    }
+
+    /// ⌘N pastes the pinned card in slot N — globally, regardless of the current
+    /// section filter, so the key always matches the displayed number.
     func pasteIndex(_ i: Int) {
-        let list = filtered()
-        guard i >= 1, list.indices.contains(i - 1) else { return }
-        onPaste(list[i - 1], false)
+        let pinned = pinnedSlots
+        guard i >= 1, pinned.indices.contains(i - 1) else { return }
+        onPaste(pinned[i - 1], false)
     }
 
     func togglePin(_ item: ClipItem) async {
@@ -113,16 +131,23 @@ final class GalleryViewModel: ObservableObject {
         await reload()
     }
 
-    /// Reorder a pinned item to sit before `targetID` (drag-to-reorder).
-    func movePinned(_ draggedID: UUID, before targetID: UUID) async {
-        guard draggedID != targetID else { return }
+    /// Assign a card to quick-paste slot `slot` (1-based). A quick-slot is a pin,
+    /// so this pins the card and places it at pinned-rank `slot`, insert-shifting
+    /// the others. Picking a slot beyond the current pinned count clamps to the
+    /// end (you can't be #5 if only 3 are pinned).
+    func assignSlot(_ item: ClipItem, slot: Int) async {
         var pinned = items.filter(\.isPinned).sorted { $0.pinOrder < $1.pinOrder }
-        guard let from = pinned.firstIndex(where: { $0.id == draggedID }) else { return }
-        let moved = pinned.remove(at: from)
-        let insertAt = pinned.firstIndex(where: { $0.id == targetID }) ?? pinned.count
-        pinned.insert(moved, at: insertAt)
-        for (i, p) in pinned.enumerated() where p.pinOrder != i {
-            var u = p; u.pinOrder = i
+        pinned.removeAll { $0.id == item.id }
+        var moved = item
+        moved.isPinned = true
+        moved.expiresAt = nil
+        let rank = max(0, min(slot - 1, pinned.count))
+        pinned.insert(moved, at: rank)
+        for (i, p) in pinned.enumerated() {
+            var u = p
+            u.pinOrder = i
+            u.isPinned = true
+            u.expiresAt = nil
             try? await store.update(u)
         }
         await reload()

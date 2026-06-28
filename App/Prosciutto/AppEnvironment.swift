@@ -3,6 +3,13 @@ import ProsciuttoKit
 
 @MainActor
 final class AppEnvironment: ObservableObject {
+    /// Single shared instance. The App struct can be constructed more than once
+    /// by SwiftUI; a plain `@StateObject = AppEnvironment()` would then run the
+    /// init side-effects (monitor.start, Core Data stack, observers) multiple
+    /// times, spawning duplicate pollers that race the same store. A singleton
+    /// guarantees the setup happens exactly once.
+    static let shared = AppEnvironment()
+
     let store = CoreDataClipStore()
     let paste = PasteService()
     let reader = SystemPasteboardReader()
@@ -16,7 +23,7 @@ final class AppEnvironment: ObservableObject {
 
     @Published var isPaused = false
 
-    init() {
+    private init() {
         let vm = GalleryViewModel(store: store)
         self.vm = vm
         let theme = self.theme
