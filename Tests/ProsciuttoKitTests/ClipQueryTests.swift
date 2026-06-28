@@ -31,4 +31,19 @@ final class ClipQueryTests: XCTestCase {
         let items = [mk("a", kind: .text), mk("b", kind: .image)]
         XCTAssertEqual(ClipQuery().apply(to: items).count, 2)
     }
+    func testFuzzyFiltersSubsequence() {
+        var q = ClipQuery(); q.text = "prsc"; q.fuzzy = true
+        let out = q.apply(to: [mk("prosciutto", kind: .text), mk("banana", kind: .text)]).map(\.textPlain)
+        XCTAssertEqual(out, ["prosciutto"])
+    }
+    func testFuzzyRanksByScore() {
+        var q = ClipQuery(); q.text = "pro"; q.fuzzy = true
+        let out = q.apply(to: [mk("a p r o", kind: .text), mk("prologue", kind: .text)]).map(\.textPlain)
+        XCTAssertEqual(out.first, "prologue")   // contiguous beats scattered
+    }
+    func testNonFuzzyStillSubstring() {
+        var q = ClipQuery(); q.text = "ana"; q.fuzzy = false
+        let out = q.apply(to: [mk("banana", kind: .text), mk("prosciutto", kind: .text)]).map(\.textPlain)
+        XCTAssertEqual(out, ["banana"])
+    }
 }
