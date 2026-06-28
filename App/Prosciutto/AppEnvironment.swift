@@ -55,7 +55,8 @@ final class AppEnvironment: ObservableObject {
         let ttl = TimeInterval(Preferences.shared.maxAgeDays) * 86_400
         monitor = ClipboardMonitor(reader: reader, store: store,
                                    exclusion: ExclusionPolicy(blockedBundleIDs: Preferences.shared.blockedBundleIDs),
-                                   clock: SystemClock(), ttl: ttl)
+                                   clock: SystemClock(), ttl: ttl,
+                                   captureFilter: Preferences.shared.captureFilter)
         monitor.onCapture = { [weak self] in
             Task { @MainActor in
                 self?.playCaptureSound()
@@ -66,9 +67,18 @@ final class AppEnvironment: ObservableObject {
         monitor.isPaused = isPaused
         monitor.start(interval: 0.3)
 
-        hotkey.onTrigger = { [weak self] in self?.toggleGallery() }
-        hotkey.register()
+        vm.query.fuzzy = Preferences.shared.useFuzzySearch
+        reloadHotkey()
         installKeyMonitor()
+
+        NotificationCenter.default.addObserver(forName: .prosciuttoSettingsChanged, object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in
+                self?.applyCaptureSettings()
+                self?.reloadHotkey()
+                self?.vm.query.fuzzy = Preferences.shared.useFuzzySearch
+                await self?.vm.reload()
+            }
+        }
 
         // Show the gallery when the user re-opens the app from Launchpad/Dock.
         NotificationCenter.default.addObserver(forName: .prosciuttoOpenGallery, object: nil, queue: .main) { [weak self] _ in
@@ -113,9 +123,11 @@ final class AppEnvironment: ObservableObject {
                    let n = Int(s), (1...9).contains(n) {
                     self.vm.pasteIndex(n); return nil               // ⌘1–9 paste
                 }
-                if mods == [.command, .option],
-                   event.charactersIgnoringModifiers?.lowercased() == "v" {
-                    self.vm.pasteSelected(asPlainText: true); return nil  // ⌘⌥V plain paste
+                let plain = KeyCombo(storedKeyCode: Preferences.shared.plainPasteKeyCode,
+                                     storedModifiers: Preferences.shared.plainPasteModifiers)
+                if event.keyCode == plain.keyCode,
+                   mods == plain.modifiers.intersection([.command, .option, .control, .shift]) {
+                    self.vm.pasteSelected(asPlainText: true); return nil  // plain paste
                 }
                 if mods == .command, event.keyCode == 51 {                // ⌘⌫ delete
                     Task { await self.vm.deleteSelected() }; return nil
@@ -138,6 +150,21 @@ final class AppEnvironment: ObservableObject {
         }
     }
 
+    /// Rebuild capture policy from Preferences and push it into the live monitor.
+    func applyCaptureSettings() {
+        monitor.exclusion = ExclusionPolicy(blockedBundleIDs: Preferences.shared.blockedBundleIDs)
+        monitor.captureFilter = Preferences.shared.captureFilter
+    }
+
+    /// (Re)register the global open-gallery hotkey from Preferences.
+    func reloadHotkey() {
+        let combo = KeyCombo(storedKeyCode: Preferences.shared.openHotkeyKeyCode,
+                             storedModifiers: Preferences.shared.openHotkeyModifiers)
+        hotkey.unregister()
+        hotkey.onTrigger = { [weak self] in self?.toggleGallery() }
+        hotkey.register(keyCode: UInt32(combo.keyCode), modifiers: combo.carbonModifiers)
+    }
+
     func togglePause() {
         isPaused.toggle()
         monitor.isPaused = isPaused
@@ -155,4 +182,8 @@ final class AppEnvironment: ObservableObject {
             Task { try? await self.store.prune(keeping: Preferences.shared.retentionPolicy, now: Date()) }
         }
     }
+}
+
+extension Notification.Name {
+    static let prosciuttoSettingsChanged = Notification.Name("prosciutto.settingsChanged")
 }

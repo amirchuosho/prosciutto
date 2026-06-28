@@ -9,6 +9,7 @@ final class HotkeyManager {
 
     func register(keyCode: UInt32 = UInt32(kVK_ANSI_V),
                   modifiers: UInt32 = UInt32(cmdKey | shiftKey)) {
+        unregister()
         var spec = EventTypeSpec(eventClass: OSType(kEventClassKeyboard),
                                  eventKind: UInt32(kEventHotKeyPressed))
         InstallEventHandler(GetApplicationEventTarget(), { _, _, ctx in
