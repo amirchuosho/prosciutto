@@ -152,7 +152,7 @@ struct SettingsView: View {
     }
 
     private var accentSwatches: some View {
-        HStack(spacing: 12) {
+        LazyVGrid(columns: Array(repeating: GridItem(.fixed(40), spacing: 10), count: 6), spacing: 12) {
             ForEach(AccentTheme.allCases) { t in
                 let color = t.color(customHex: theme.customAccentHex)
                 Button { theme.accentTheme = t } label: {

@@ -16,7 +16,7 @@ enum Appearance: String, CaseIterable, Identifiable {
 
 /// A named accent palette. `custom` reads a user-picked hex from Preferences.
 enum AccentTheme: String, CaseIterable, Identifiable {
-    case prosciutto, midnight, forest, mono, custom
+    case prosciutto, midnight, forest, mono, sunset, grape, ocean, gold, rose, lime, crimson, slate, custom
     var id: String { rawValue }
     var label: String {
         switch self {
@@ -24,6 +24,14 @@ enum AccentTheme: String, CaseIterable, Identifiable {
         case .midnight: return "Midnight"
         case .forest: return "Forest"
         case .mono: return "Mono"
+        case .sunset: return "Sunset"
+        case .grape: return "Grape"
+        case .ocean: return "Ocean"
+        case .gold: return "Gold"
+        case .rose: return "Rose"
+        case .lime: return "Lime"
+        case .crimson: return "Crimson"
+        case .slate: return "Slate"
         case .custom: return "Custom"
         }
     }
@@ -41,6 +49,22 @@ enum AccentTheme: String, CaseIterable, Identifiable {
                                   Color(.sRGB, red: 0.09, green: 0.64, blue: 0.40)]
         case .mono:       return [Color(.sRGB, red: 0.86, green: 0.88, blue: 0.92),
                                   Color(.sRGB, red: 0.62, green: 0.64, blue: 0.70)]
+        case .sunset:   return [Color(.sRGB, red: 1.00, green: 0.55, blue: 0.26),
+                                Color(.sRGB, red: 1.00, green: 0.30, blue: 0.45)]
+        case .grape:    return [Color(.sRGB, red: 0.66, green: 0.40, blue: 1.00),
+                                Color(.sRGB, red: 0.50, green: 0.25, blue: 0.95)]
+        case .ocean:    return [Color(.sRGB, red: 0.30, green: 0.80, blue: 0.85),
+                                Color(.sRGB, red: 0.20, green: 0.55, blue: 0.85)]
+        case .gold:     return [Color(.sRGB, red: 1.00, green: 0.80, blue: 0.30),
+                                Color(.sRGB, red: 0.95, green: 0.60, blue: 0.15)]
+        case .rose:     return [Color(.sRGB, red: 1.00, green: 0.45, blue: 0.75),
+                                Color(.sRGB, red: 0.85, green: 0.30, blue: 0.60)]
+        case .lime:     return [Color(.sRGB, red: 0.70, green: 0.90, blue: 0.30),
+                                Color(.sRGB, red: 0.45, green: 0.78, blue: 0.25)]
+        case .crimson:  return [Color(.sRGB, red: 1.00, green: 0.40, blue: 0.40),
+                                Color(.sRGB, red: 0.80, green: 0.15, blue: 0.25)]
+        case .slate:    return [Color(.sRGB, red: 0.55, green: 0.62, blue: 0.72),
+                                Color(.sRGB, red: 0.36, green: 0.42, blue: 0.52)]
         case .custom:     let c = Color(hex: customHex) ?? .accentColor; return [c, c]
         }
     }
