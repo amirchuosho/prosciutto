@@ -51,4 +51,31 @@ final class ClipboardMonitorTests: XCTestCase {
         let count = try await store.all().count
         XCTAssertEqual(count, 0)
     }
+
+    func testSkipsDisabledType() async throws {
+        let reader = FakeReader()
+        let store = InMemoryClipStore()
+        let monitor = ClipboardMonitor(reader: reader, store: store,
+            exclusion: ExclusionPolicy(blockedBundleIDs: []),
+            clock: FixedClock(t: .init(timeIntervalSince1970: 0)), ttl: 60,
+            captureFilter: CaptureFilter.from(saveText: false, saveImages: true, saveFiles: true, maxBytes: 0))
+        reader.changeCount = 1
+        reader.next = PasteboardSnapshot(plainText: "some text")
+        try await monitor.poll()
+        let count = try await store.all().count
+        XCTAssertEqual(count, 0)
+    }
+    func testSkipsOversized() async throws {
+        let reader = FakeReader()
+        let store = InMemoryClipStore()
+        let monitor = ClipboardMonitor(reader: reader, store: store,
+            exclusion: ExclusionPolicy(blockedBundleIDs: []),
+            clock: FixedClock(t: .init(timeIntervalSince1970: 0)), ttl: 60,
+            captureFilter: CaptureFilter(enabledKinds: CaptureFilter.allKinds, maxBytes: 4))
+        reader.changeCount = 1
+        reader.next = PasteboardSnapshot(plainText: "way too long")
+        try await monitor.poll()
+        let count = try await store.all().count
+        XCTAssertEqual(count, 0)
+    }
 }

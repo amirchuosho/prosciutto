@@ -3,7 +3,8 @@ import Foundation
 public final class ClipboardMonitor {
     private let reader: PasteboardReader
     private let store: ClipStore
-    private let exclusion: ExclusionPolicy
+    public var exclusion: ExclusionPolicy
+    public var captureFilter: CaptureFilter
     private let clock: Clock
     private let ttl: TimeInterval
     private var lastChangeCount: Int
@@ -13,10 +14,11 @@ public final class ClipboardMonitor {
     public var onCapture: (() -> Void)?
 
     public init(reader: PasteboardReader, store: ClipStore, exclusion: ExclusionPolicy,
-                clock: Clock, ttl: TimeInterval) {
+                clock: Clock, ttl: TimeInterval, captureFilter: CaptureFilter = .unrestricted) {
         self.reader = reader
         self.store = store
         self.exclusion = exclusion
+        self.captureFilter = captureFilter
         self.clock = clock
         self.ttl = ttl
         self.lastChangeCount = reader.changeCount
@@ -30,6 +32,8 @@ public final class ClipboardMonitor {
         guard let snap = reader.snapshot(), exclusion.shouldCapture(snap),
               let kind = KindDetector.detect(snap) else { return }
         let item = ClipItem.make(from: snap, kind: kind, now: clock.now(), ttl: ttl)
+        let byteSize = item.imageData?.count ?? item.textPlain?.utf8.count ?? 0
+        guard captureFilter.shouldCapture(kind: kind, byteSize: byteSize) else { return }
         try await store.upsert(item)
         onCapture?()
     }
