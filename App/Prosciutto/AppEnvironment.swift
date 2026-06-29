@@ -46,8 +46,16 @@ final class AppEnvironment: ObservableObject {
             // previous app is active, so the keystroke never lands in our search.
             self.panel.hide {
                 guard auto else { return }
+                // The open hotkey may BE ⌘V (the user can rebind it to replace
+                // system paste). Our synthesized ⌘V would then be caught by our
+                // own global hotkey and reopen the gallery instead of pasting.
+                // Drop the hotkey while we synthesize, then restore it.
+                self.hotkey.unregister()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.07) {
                     self.paste.synthesizePaste()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                        self.reloadHotkey()
+                    }
                 }
             }
         }
