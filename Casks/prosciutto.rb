@@ -8,7 +8,7 @@ cask "prosciutto" do
   desc "Open-source visual clipboard manager for macOS"
   homepage "https://github.com/amirchuosho/prosciutto"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "Prosciutto.app"
 
