@@ -42,11 +42,24 @@ The storage layer is already iCloud-ready.
 
 ## Install
 
-> Homebrew cask and notarized DMG releases are coming. For now, build from source (below).
+**Download the DMG** from the [latest release](https://github.com/amirchuosho/prosciutto/releases/latest),
+open it, and drag **Prosciutto** into **Applications**.
+
+Prosciutto is open source and **not yet notarized by Apple** (that needs a paid
+Apple Developer account). So on first launch macOS Gatekeeper blocks it. Clear the
+quarantine flag once — either:
 
 ```sh
-brew install --cask prosciutto   # coming soon
+xattr -dr com.apple.quarantine /Applications/Prosciutto.app
 ```
+
+…or open it once via **System Settings → Privacy & Security → “Open Anyway”**.
+After that it launches normally.
+
+> Homebrew cask coming once notarized:
+> ```sh
+> brew install --cask prosciutto   # coming soon
+> ```
 
 ### Permissions
 
@@ -65,7 +78,7 @@ Requires **Xcode 15+** and [XcodeGen](https://github.com/yonaskolb/XcodeGen).
 
 ```sh
 brew install xcodegen
-git clone https://github.com/OWNER/prosciutto.git
+git clone https://github.com/amirchuosho/prosciutto.git
 cd prosciutto
 
 swift test            # run the ProsciuttoKit logic suite
