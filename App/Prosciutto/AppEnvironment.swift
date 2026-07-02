@@ -125,17 +125,20 @@ final class AppEnvironment: ObservableObject {
                   !self.vm.isEditingTitle else { return event }
             let mods = event.modifierFlags.intersection([.command, .option, .control, .shift])
 
-            // ⌘ combinations first
+            // Configurable plain-paste — checked first and matched by its exact
+            // combo, so it works no matter which modifier the user bound it to
+            // (not only ⌘-combos).
+            let plain = KeyCombo(storedKeyCode: Preferences.shared.plainPasteKeyCode,
+                                 storedModifiers: Preferences.shared.plainPasteModifiers)
+            if plain.matches(keyCode: event.keyCode, modifiers: mods) {
+                self.vm.pasteSelected(asPlainText: true); return nil  // plain paste
+            }
+
+            // ⌘ combinations
             if mods.contains(.command) {
                 if mods == .command, let s = event.charactersIgnoringModifiers,
                    let n = Int(s), (1...9).contains(n) {
                     self.vm.pasteIndex(n); return nil               // ⌘1–9 paste
-                }
-                let plain = KeyCombo(storedKeyCode: Preferences.shared.plainPasteKeyCode,
-                                     storedModifiers: Preferences.shared.plainPasteModifiers)
-                if event.keyCode == plain.keyCode,
-                   mods == plain.modifiers.intersection([.command, .option, .control, .shift]) {
-                    self.vm.pasteSelected(asPlainText: true); return nil  // plain paste
                 }
                 if mods == .command, event.keyCode == 51 {                // ⌘⌫ delete
                     Task { await self.vm.deleteSelected() }; return nil

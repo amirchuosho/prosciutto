@@ -18,6 +18,17 @@ struct KeyCombo: Equatable {
                   modifiers: NSEvent.ModifierFlags(rawValue: UInt(storedModifiers)))
     }
 
+    /// True when a key event matches this combo — same keyCode and same
+    /// device-independent modifiers. Used by the in-panel key monitor so a
+    /// rebound shortcut is honoured regardless of which modifier it uses.
+    func matches(keyCode eventCode: UInt16, modifiers eventMods: NSEvent.ModifierFlags) -> Bool {
+        // Compare only the four significant modifiers; ignore .function /
+        // .capsLock / .numericPad, which arrow and other keys carry.
+        let sig: NSEvent.ModifierFlags = [.command, .option, .control, .shift]
+        return eventCode == keyCode
+            && eventMods.intersection(sig) == modifiers.intersection(sig)
+    }
+
     var carbonModifiers: UInt32 {
         var m: UInt32 = 0
         if modifiers.contains(.command) { m |= UInt32(cmdKey) }

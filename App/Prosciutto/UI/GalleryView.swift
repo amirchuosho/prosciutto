@@ -39,6 +39,7 @@ struct GalleryView: View {
             .preferredColorScheme(theme.colorScheme)
         }
         .onChange(of: model.sectionFilter) { _, _ in model.selection = 0 }
+        .onChange(of: model.query.text) { _, _ in model.selection = 0 }
         .alert("New section", isPresented: $showingAddSection) {
             TextField("Name", text: $newSectionName)
             Button("Create") {

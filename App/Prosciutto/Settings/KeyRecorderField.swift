@@ -16,6 +16,7 @@ struct KeyRecorderField: NSViewRepresentable {
 
     func updateNSView(_ nsView: RecorderButton, context: Context) {
         nsView.combo = combo
+        nsView.onRecord = { combo = $0 }   // keep the binding write-through fresh
     }
 
     final class RecorderButton: NSButton {
