@@ -144,7 +144,7 @@ struct SettingsView: View {
             Section("Accent") {
                 accentSwatches
                 if theme.accentTheme == .custom {
-                    ColorPicker("Custom color", selection: customBinding, supportsOpacity: false)
+                    ColorPicker("Custom color", selection: $theme.customAccentHex.asColor(default: .pink), supportsOpacity: false)
                 }
             }
         }
@@ -184,10 +184,4 @@ struct SettingsView: View {
         .padding(.vertical, 4)
     }
 
-    private var customBinding: Binding<Color> {
-        Binding(
-            get: { Color(hex: theme.customAccentHex) ?? .pink },
-            set: { theme.customAccentHex = $0.toHex() ?? theme.customAccentHex }
-        )
-    }
 }

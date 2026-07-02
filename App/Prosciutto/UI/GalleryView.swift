@@ -291,7 +291,9 @@ struct GalleryView: View {
         guard list.indices.contains(model.selection) else { return }
         let id = list[model.selection].id
         if reduceMotion { proxy.scrollTo(id, anchor: .center) }
-        else { withAnimation(.easeOut(duration: 0.12)) { proxy.scrollTo(id, anchor: .center) } }
+        // Interruptible spring: rapid arrow taps re-target smoothly instead of
+        // restarting a fixed-duration ease (which glitched every few taps).
+        else { withAnimation(.spring(response: 0.22, dampingFraction: 0.9)) { proxy.scrollTo(id, anchor: .center) } }
     }
 
     /// The section a card is filed in, as a (name, colour) tag. Type stays the

@@ -1,6 +1,18 @@
 import SwiftUI
 import AppKit
 
+extension Binding where Value == String {
+    /// A `Binding<Color>` view over a hex-string binding, for driving a
+    /// `ColorPicker` from stored hex. Shared by the accent picker and the
+    /// colour-clip editor.
+    func asColor(default fallback: Color = .gray) -> Binding<Color> {
+        Binding<Color>(
+            get: { Color(hex: wrappedValue) ?? fallback },
+            set: { wrappedValue = $0.toHex() ?? wrappedValue }
+        )
+    }
+}
+
 extension Color {
     /// Parse a hex string (`#RGB`, `#RRGGBB`, or `#RRGGBBAA`) into a Color.
     init?(hex raw: String) {

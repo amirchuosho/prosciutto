@@ -306,7 +306,7 @@ struct ClipCard: View {
                         .foregroundStyle((Color(hex: bodyDraft) ?? .gray).readableText)
                 )
             HStack(spacing: DS.Space.sm) {
-                ColorPicker("", selection: colorBinding, supportsOpacity: false).labelsHidden()
+                ColorPicker("", selection: $bodyDraft.asColor(), supportsOpacity: false).labelsHidden()
                 TextField("#RRGGBB", text: $bodyDraft)
                     .textFieldStyle(.roundedBorder)
                     .font(.system(size: 12, design: .monospaced))
@@ -323,13 +323,6 @@ struct ClipCard: View {
             }
         }
         .padding(DS.Space.sm)
-    }
-
-    private var colorBinding: Binding<Color> {
-        Binding(
-            get: { Color(hex: bodyDraft) ?? .gray },
-            set: { bodyDraft = $0.toHex() ?? bodyDraft }
-        )
     }
 
     private func commitColor() {
