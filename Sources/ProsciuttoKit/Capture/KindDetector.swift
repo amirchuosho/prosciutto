@@ -58,13 +58,34 @@ public enum KindDetector {
     /// addresses in Mail/Notes. Requires the match to cover most of the string so
     /// a code snippet containing an address substring isn't misclassified.
     static func isAddress(_ t: String) -> Bool {
-        guard t.count >= 6, t.count <= 200,
-              let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.address.rawValue)
+        guard t.count >= 6, t.count <= 200 else { return false }
+        // 1) Apple's Data Detector (strong for US / CA / UK formats).
+        if let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.address.rawValue) {
+            let range = NSRange(t.startIndex..., in: t)
+            if let m = detector.firstMatch(in: t, range: range), m.resultType == .address,
+               Double(m.range.length) >= Double(range.length) * 0.7 {
+                return true
+            }
+        }
+        // 2) Heuristic for international formats NSDataDetector misses: a street
+        //    keyword (multi-language) + a house number + a comma, on one line.
+        return looksLikeStreetAddress(t)
+    }
+
+    private static let streetWords: [String] = [
+        "st", "street", "ave", "avenue", "rd", "road", "blvd", "boulevard",
+        "ln", "lane", "dr", "drive", "way", "sq", "square", "hwy", "highway",
+        "ct", "court", "pl", "place", "terrace", "close", "crescent",
+        "רחוב", "שדרות", "שד", "דרך", "סמטה", "סמטת", "כביש", "רח",
+    ]
+
+    private static func looksLikeStreetAddress(_ t: String) -> Bool {
+        guard !t.contains("\n"), t.contains(","), t.rangeOfCharacter(from: .decimalDigits) != nil
         else { return false }
-        let range = NSRange(t.startIndex..., in: t)
-        guard let m = detector.firstMatch(in: t, range: range), m.resultType == .address
-        else { return false }
-        return Double(m.range.length) >= Double(range.length) * 0.7
+        let lower = t.lowercased()
+        let tokens = lower.split { !$0.isLetter && !($0.unicodeScalars.first.map { $0.value >= 0x0590 && $0.value <= 0x05FF } ?? false) }
+                          .map(String.init)
+        return tokens.contains { streetWords.contains($0) }
     }
 
     static func looksLikeCode(_ t: String) -> Bool {

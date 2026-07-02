@@ -30,6 +30,15 @@ final class KindDetectorTests: XCTestCase {
     func testAddressIsLocation() {
         XCTAssertEqual(KindDetector.detect(snap("1 Infinite Loop, Cupertino, CA 95014")), .location)
     }
+    func testInternationalAddressIsLocation() {
+        // NSDataDetector misses non-US formats; the heuristic (street word + digit
+        // + comma) catches them.
+        XCTAssertEqual(KindDetector.detect(snap("Rishon LeTsiyon St 1, Petah Tikva")), .location)
+        XCTAssertEqual(KindDetector.detect(snap("רחוב הרצל 5, תל אביב")), .location)
+    }
+    func testCommaListIsNotLocation() {
+        XCTAssertEqual(KindDetector.detect(snap("buy milk, eggs, 2 loaves of bread")), .text)
+    }
     func testPlainSentenceNotLocation() {
         XCTAssertEqual(KindDetector.detect(snap("let us meet for lunch tomorrow")), .text)
     }
