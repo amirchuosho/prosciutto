@@ -12,7 +12,7 @@ struct GalleryView: View {
     @State private var newSectionName = ""
     @State private var dropPulse: UUID?
 
-    private let kinds: [ClipKind] = [.text, .link, .image, .color, .code, .file]
+    private let kinds: [ClipKind] = [.text, .link, .image, .color, .code, .file, .location]
 
     var body: some View {
         VStack(spacing: 10) {

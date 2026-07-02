@@ -38,6 +38,9 @@ struct KindStyle {
         case .file:
             return KindStyle(color: Color(.sRGB, red: 1.0, green: 0.78, blue: 0.35),
                              icon: "doc", label: "FILE")
+        case .location:
+            return KindStyle(color: Color(.sRGB, red: 0.95, green: 0.42, blue: 0.42),
+                             icon: "mappin.and.ellipse", label: "PLACE")
         }
     }
 }

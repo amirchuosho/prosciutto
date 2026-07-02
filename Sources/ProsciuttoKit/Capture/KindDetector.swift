@@ -19,6 +19,7 @@ public enum KindDetector {
             if isColor(t) { return .color }
             if isURL(t) { return .link }
             if isJSONObjectOrArray(t) { return .code }
+            if isCoordinates(t) || isAddress(t) { return .location }
             if looksLikeCode(t) { return .code }
             return .text
         }
@@ -43,6 +44,27 @@ public enum KindDetector {
         guard t.hasPrefix("{") || t.hasPrefix("["),
               let d = t.data(using: .utf8) else { return false }
         return (try? JSONSerialization.jsonObject(with: d)) != nil   // no fragments
+    }
+
+    /// `lat, long` with valid ranges (lat ±90, long ±180).
+    private static let coordRegex = try! NSRegularExpression(
+        pattern: #"^[-+]?(?:[1-8]?\d(?:\.\d+)?|90(?:\.0+)?)\s*,\s*[-+]?(?:180(?:\.0+)?|(?:1[0-7]\d|[1-9]?\d)(?:\.\d+)?)$"#)
+
+    static func isCoordinates(_ t: String) -> Bool {
+        coordRegex.firstMatch(in: t, range: NSRange(t.startIndex..., in: t)) != nil
+    }
+
+    /// A postal address, via the same Data Detector macOS uses to underline
+    /// addresses in Mail/Notes. Requires the match to cover most of the string so
+    /// a code snippet containing an address substring isn't misclassified.
+    static func isAddress(_ t: String) -> Bool {
+        guard t.count >= 6, t.count <= 200,
+              let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.address.rawValue)
+        else { return false }
+        let range = NSRange(t.startIndex..., in: t)
+        guard let m = detector.firstMatch(in: t, range: range), m.resultType == .address
+        else { return false }
+        return Double(m.range.length) >= Double(range.length) * 0.7
     }
 
     static func looksLikeCode(_ t: String) -> Bool {

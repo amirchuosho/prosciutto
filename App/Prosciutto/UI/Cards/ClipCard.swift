@@ -346,6 +346,7 @@ struct ClipCard: View {
         case .color: ColorCard(item: item)
         case .code:  CodeCard(item: item)
         case .file:  FileCard(item: item)
+        case .location: LocationCard(item: item)
         case .text, .rtf: TextCard(item: item)
         }
     }
@@ -410,6 +411,7 @@ struct ClipCard: View {
             return "Image"
         case .color: return item.textPlain ?? "Color"
         case .file:  return item.sourceAppName ?? "File"
+        case .location: return "Location"
         }
     }
 }

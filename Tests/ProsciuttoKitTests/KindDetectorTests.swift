@@ -19,6 +19,20 @@ final class KindDetectorTests: XCTestCase {
         // A bare string/number is valid JSON-with-fragments but must not be code.
         XCTAssertEqual(KindDetector.detect(snap("hello world")), .text)
     }
+    func testCoordinatesAreLocation() {
+        XCTAssertEqual(KindDetector.detect(snap("37.7749,-122.4194")), .location)
+        XCTAssertEqual(KindDetector.detect(snap("40.7128, -74.0060")), .location)
+    }
+    func testInvalidCoordinatesNotLocation() {
+        XCTAssertEqual(KindDetector.detect(snap("999.0, 500.0")), .text)   // out of range
+        XCTAssertEqual(KindDetector.detect(snap("1,2,3")), .text)
+    }
+    func testAddressIsLocation() {
+        XCTAssertEqual(KindDetector.detect(snap("1 Infinite Loop, Cupertino, CA 95014")), .location)
+    }
+    func testPlainSentenceNotLocation() {
+        XCTAssertEqual(KindDetector.detect(snap("let us meet for lunch tomorrow")), .text)
+    }
     func testImage() {
         XCTAssertEqual(KindDetector.detect(PasteboardSnapshot(imageData: Data([0x89, 0x50]))), .image)
     }
