@@ -90,6 +90,17 @@ final class GalleryViewModel: ObservableObject {
         selection = min(max(0, selection + delta), count - 1)
     }
 
+    func moveToStart() { selection = 0 }
+    func moveToEnd() { selection = max(0, filtered().count - 1) }
+
+    /// Select the newest non-pinned clip (what the user most likely just copied),
+    /// so each gallery open starts at the front instead of the last-paste spot.
+    /// Falls back to the first item if everything is pinned / the list is empty.
+    func selectNewestUnpinned() {
+        let list = filtered()
+        selection = list.firstIndex(where: { !$0.isPinned }) ?? 0
+    }
+
     func pasteSelected(asPlainText: Bool = false) {
         let list = filtered()
         guard list.indices.contains(selection) else { return }

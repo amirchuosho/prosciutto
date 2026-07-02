@@ -158,10 +158,16 @@ struct SettingsView: View {
                 Button { theme.accentTheme = t } label: {
                     VStack(spacing: 5) {
                         ZStack {
-                            Circle().fill(color).frame(width: 28, height: 28)
                             if t == .custom {
+                                // Rainbow wheel signals "pick any colour".
+                                Circle().fill(AngularGradient(
+                                    colors: [.red, .orange, .yellow, .green, .cyan, .blue, .purple, .pink, .red],
+                                    center: .center)).frame(width: 28, height: 28)
                                 Image(systemName: "eyedropper").font(.system(size: 11, weight: .bold))
                                     .foregroundStyle(.white)
+                                    .shadow(color: .black.opacity(0.4), radius: 1)
+                            } else {
+                                Circle().fill(color).frame(width: 28, height: 28)
                             }
                             if theme.accentTheme == t {
                                 Circle().strokeBorder(.primary, lineWidth: 2).frame(width: 34, height: 34)
@@ -169,6 +175,7 @@ struct SettingsView: View {
                         }
                         .frame(width: 34, height: 34)
                         Text(t.label).font(.system(size: 9)).foregroundStyle(.secondary)
+                            .lineLimit(1).minimumScaleFactor(0.55).frame(width: 44)
                     }
                 }
                 .buttonStyle(.plain)

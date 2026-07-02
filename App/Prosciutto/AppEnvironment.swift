@@ -111,7 +111,12 @@ final class AppEnvironment: ObservableObject {
 
     func openGallery() {
         panel.show()                    // show instantly, no delay
-        Task { await vm.reload() }       // populate (cards animate in)
+        Task {
+            vm.sectionFilter = .all     // always start on All, no leftover group
+            vm.query.text = ""          // cleared search
+            await vm.reload()
+            vm.selectNewestUnpinned()   // land on the newest clip, not the last-paste spot
+        }
     }
 
     func hideGallery() {
@@ -140,6 +145,8 @@ final class AppEnvironment: ObservableObject {
                    let n = Int(s), (1...9).contains(n) {
                     self.vm.pasteIndex(n); return nil               // ⌘1–9 paste
                 }
+                if mods == .command, event.keyCode == 123 { self.vm.moveToStart(); return nil }  // ⌘← start
+                if mods == .command, event.keyCode == 124 { self.vm.moveToEnd(); return nil }     // ⌘→ end
                 if mods == .command, event.keyCode == 51 {                // ⌘⌫ delete
                     Task { await self.vm.deleteSelected() }; return nil
                 }
