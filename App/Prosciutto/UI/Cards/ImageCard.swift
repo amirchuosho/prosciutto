@@ -1,14 +1,30 @@
 import SwiftUI
 import ProsciuttoKit
 
+/// Decoded-image cache keyed by clip id. The LazyHStack recreates cards on
+/// scroll; without this, each re-appearance re-decodes the image (from data or
+/// disk), hitching the scroll.
+@MainActor private enum ImageDecodeCache {
+    static var store: [UUID: NSImage] = [:]
+    static let limit = 80
+    static func image(for item: ClipItem) -> NSImage? {
+        if let hit = store[item.id] { return hit }
+        let img: NSImage?
+        if let data = item.imageData { img = NSImage(data: data) }
+        else if let path = item.textPlain, !path.isEmpty { img = NSImage(contentsOfFile: path) }
+        else { img = nil }
+        if let img {
+            if store.count >= limit { store.removeAll() }
+            store[item.id] = img
+        }
+        return img
+    }
+}
+
 struct ImageCard: View {
     let item: ClipItem
 
-    private var nsImage: NSImage? {
-        if let data = item.imageData { return NSImage(data: data) }
-        if let path = item.textPlain, !path.isEmpty { return NSImage(contentsOfFile: path) }
-        return nil
-    }
+    private var nsImage: NSImage? { ImageDecodeCache.image(for: item) }
 
     var body: some View {
         if let img = nsImage {

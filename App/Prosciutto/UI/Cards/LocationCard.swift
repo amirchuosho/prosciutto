@@ -2,6 +2,19 @@ import SwiftUI
 import MapKit
 import ProsciuttoKit
 
+/// Process-wide cache of rendered map snapshots, keyed by the clip text + theme.
+/// The gallery's LazyHStack recreates cards as they scroll in and out; without a
+/// cache each re-appearance would re-geocode + re-snapshot, hitching the scroll.
+@MainActor private enum MapSnapshotCache {
+    static var store: [String: NSImage] = [:]
+    static let limit = 60
+    static func get(_ key: String) -> NSImage? { store[key] }
+    static func set(_ key: String, _ image: NSImage) {
+        if store.count >= limit { store.removeAll() }   // simple bound
+        store[key] = image
+    }
+}
+
 /// Renders a map preview for a location clip — coordinates ("lat, long") shown
 /// directly, or a postal address geocoded to a point. Falls back to a pin icon
 /// if the point can't be resolved.
@@ -47,7 +60,10 @@ struct LocationCard: View {
         .task(id: text) { await load() }
     }
 
+    private var cacheKey: String { "\(text)|\(scheme == .dark ? "d" : "l")" }
+
     private func load() async {
+        if let cached = MapSnapshotCache.get(cacheKey) { snapshot = cached; failed = false; return }
         snapshot = nil; failed = false
         guard let coord = await resolveCoordinate() else { failed = true; return }
         let opts = MKMapSnapshotter.Options()
@@ -56,6 +72,7 @@ struct LocationCard: View {
         opts.size = CGSize(width: DS.CardSize.width, height: 210)
         opts.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
         if let result = try? await MKMapSnapshotter(options: opts).start() {
+            MapSnapshotCache.set(cacheKey, result.image)
             snapshot = result.image
         } else {
             failed = true
