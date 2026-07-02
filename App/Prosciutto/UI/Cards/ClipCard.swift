@@ -286,7 +286,57 @@ struct ClipCard: View {
     // MARK: Content + meta
 
     @ViewBuilder private var bodyContent: some View {
-        if editingBody { inlineEditor } else { kindContent }
+        if editingBody {
+            if item.kind == .color { colorEditor } else { inlineEditor }
+        } else {
+            kindContent
+        }
+    }
+
+    /// Colour-clip editor: native colour wheel (with RGB/HSB tabs) + a hex field,
+    /// both bound to `bodyDraft`, with a live preview that updates as you go.
+    private var colorEditor: some View {
+        VStack(spacing: DS.Space.sm) {
+            RoundedRectangle(cornerRadius: DS.Radius.control, style: .continuous)
+                .fill(Color(hex: bodyDraft) ?? .gray)
+                .frame(maxWidth: .infinity).frame(height: 54)
+                .overlay(
+                    Text((Color(hex: bodyDraft)?.toHex() ?? bodyDraft).uppercased())
+                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                        .foregroundStyle((Color(hex: bodyDraft) ?? .gray).readableText)
+                )
+            HStack(spacing: DS.Space.sm) {
+                ColorPicker("", selection: colorBinding, supportsOpacity: false).labelsHidden()
+                TextField("#RRGGBB", text: $bodyDraft)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.system(size: 12, design: .monospaced))
+                    .focused($bodyFocused)
+                    .onSubmit(commitColor)
+                    .onExitCommand(perform: cancelBodyEdit)
+            }
+            HStack {
+                Spacer(minLength: 0)
+                Button("Cancel", action: cancelBodyEdit).font(.system(size: 11))
+                Button("Save", action: commitColor)
+                    .font(.system(size: 11, weight: .semibold))
+                    .buttonStyle(.borderedProminent).controlSize(.small)
+            }
+        }
+        .padding(DS.Space.sm)
+    }
+
+    private var colorBinding: Binding<Color> {
+        Binding(
+            get: { Color(hex: bodyDraft) ?? .gray },
+            set: { bodyDraft = $0.toHex() ?? bodyDraft }
+        )
+    }
+
+    private func commitColor() {
+        let normalized = Color(hex: bodyDraft)?.toHex() ?? bodyDraft   // clean #RRGGBB
+        editingBody = false
+        onEditingChanged(false)
+        onEditBody(normalized)
     }
 
     @ViewBuilder private var kindContent: some View {
