@@ -197,15 +197,16 @@ struct GalleryView: View {
 
     private func filterPill(_ kind: ClipKind) -> some View {
         let style = KindStyle.of(kind)
+        let color = theme.palette.color(for: kind)
         let on = model.query.kinds.contains(kind)
         return Button {
             if on { model.query.kinds.remove(kind) } else { model.query.kinds.insert(kind) }
         } label: {
             Image(systemName: style.icon)
                 .font(.system(size: 11, weight: .bold))
-                .foregroundStyle(on ? theme.palette.color(for: kind).readableText : theme.palette.color(for: kind))
+                .foregroundStyle(on ? color.readableText : color)
                 .frame(width: 27, height: 27)
-                .background(Circle().fill(on ? AnyShapeStyle(theme.palette.color(for: kind)) : AnyShapeStyle(theme.palette.color(for: kind).opacity(0.16))))
+                .background(Circle().fill(on ? AnyShapeStyle(color) : AnyShapeStyle(color.opacity(0.16))))
         }
         .buttonStyle(.plain)
         .help(kind.rawValue.capitalized)

@@ -72,10 +72,9 @@ public enum AppTheme: String, CaseIterable, Identifiable, Sendable {
                 accent: ["#FF70A3", "#FF4566"], isDark: false,
                 typeColors: Self.ramp("#4C82F5", "#A55CE0", "#F0913C", "#E85C9E", "#2FB765", "#2AA9A0", "#E5484D"))
         case .custom:
-            let hex = customAccentHex
             return ThemeSpec(background: ["#16141B"], backgroundStyle: .solid,
                 surface: "#201D27", foreground: "#ECEAF0", secondary: "#A29AAC", hairline: "#2C2836",
-                accent: [hex, hex], isDark: true,
+                accent: [customAccentHex, customAccentHex], isDark: true,
                 typeColors: Self.ramp("#5C8FFF", "#C77DFF", "#FF9E5C", "#FF6FB0", "#52CC85", "#6FD3C7", "#FF6B6B"))
         }
     }

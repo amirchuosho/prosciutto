@@ -37,7 +37,7 @@ struct ThemePalette {
         }
         surface    = Color(hex: spec.surface) ?? .gray
         foreground = Color(hex: spec.foreground) ?? .primary
-        secondary  = Color(hex: spec.secondary) ?? .secondary
+        secondary  = Color(hex: spec.secondary) ?? Color.secondary
         hairline   = Color(hex: spec.hairline) ?? .gray.opacity(0.2)
         accent     = spec.accent.map { Color(hex: $0) ?? .accentColor }
         var tc: [ClipKind: Color] = [:]
