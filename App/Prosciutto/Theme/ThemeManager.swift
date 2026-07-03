@@ -1,4 +1,5 @@
 import SwiftUI
+import ProsciuttoKit
 
 /// App appearance: light/dark/system.
 enum Appearance: String, CaseIterable, Identifiable {
@@ -72,26 +73,25 @@ enum AccentTheme: String, CaseIterable, Identifiable {
 
 @MainActor
 final class ThemeManager: ObservableObject {
-    @Published var appearance: Appearance {
-        didSet { Preferences.shared.appearanceRaw = appearance.rawValue }
-    }
-    @Published var accentTheme: AccentTheme {
-        didSet { Preferences.shared.accentThemeRaw = accentTheme.rawValue }
+    @Published var theme: AppTheme {
+        didSet { Preferences.shared.themeRaw = theme.rawValue }
     }
     @Published var customAccentHex: String {
         didSet { Preferences.shared.customAccentHex = customAccentHex }
     }
 
+    // Retained temporarily so old SettingsView call sites compile; removed in Task 7/8.
+    @Published var appearance: Appearance = .system
+    @Published var accentTheme: AccentTheme = .prosciutto
+
     init() {
-        appearance = Appearance(rawValue: Preferences.shared.appearanceRaw) ?? .system
-        accentTheme = AccentTheme(rawValue: Preferences.shared.accentThemeRaw) ?? .prosciutto
+        theme = AppTheme(rawValue: Preferences.shared.themeRaw) ?? .prosciutto
         customAccentHex = Preferences.shared.customAccentHex
     }
 
-    var accent: Color { accentTheme.color(customHex: customAccentHex) }
-    var accentColors: [Color] { accentTheme.colors(customHex: customAccentHex) }
-    var accentGradient: LinearGradient {
-        LinearGradient(colors: accentColors, startPoint: .topLeading, endPoint: .bottomTrailing)
-    }
-    var colorScheme: ColorScheme? { appearance.colorScheme }
+    var palette: ThemePalette { ThemePalette(theme.spec(customAccentHex: customAccentHex)) }
+    var accent: Color { palette.accent[0] }
+    var accentColors: [Color] { palette.accent }
+    var accentGradient: LinearGradient { palette.accentGradient }
+    var colorScheme: ColorScheme? { palette.isDark ? .dark : .light }
 }

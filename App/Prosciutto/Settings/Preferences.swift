@@ -16,6 +16,7 @@ final class Preferences {
         static let appearance = "theme.appearance"
         static let accentTheme = "theme.accent"
         static let customAccentHex = "theme.customAccentHex"
+        static let theme = "theme.name"
         static let openKeyCode = "hotkey.open.keyCode"
         static let openModifiers = "hotkey.open.modifiers"
         static let plainKeyCode = "hotkey.plain.keyCode"
@@ -40,6 +41,18 @@ final class Preferences {
     var customAccentHex: String {
         get { defaults.string(forKey: Keys.customAccentHex) ?? "#F56B8C" }
         set { defaults.set(newValue, forKey: Keys.customAccentHex) }
+    }
+
+    /// Selected full theme. Migrates once from the old accent key.
+    var themeRaw: String {
+        get {
+            if let v = defaults.string(forKey: Keys.theme) { return v }
+            // one-time migration: everyone lands on Prosciutto (old accent/appearance retired)
+            let migrated = "prosciutto"
+            defaults.set(migrated, forKey: Keys.theme)
+            return migrated
+        }
+        set { defaults.set(newValue, forKey: Keys.theme) }
     }
 
     var captureSoundEnabled: Bool {
