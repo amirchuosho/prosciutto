@@ -47,24 +47,25 @@ public struct ClipItem: Identifiable, Sendable, Equatable {
 
     public static func make(from snapshot: PasteboardSnapshot, kind: ClipKind,
                             now: Date, ttl: TimeInterval) -> ClipItem {
-        let filePath = snapshot.fileURLs.first?.path
+        let filePaths = snapshot.fileURLs.map(\.path)
+        let filePath = filePaths.first
         // An image FILE copied from Finder also puts the file's ICON on the
         // pasteboard as .png/.tiff. That icon is unreliable (often the generic
         // grey doc icon), so for file-backed image clips we drop the inline data
         // and render the real file from its path instead.
         let isImageFile = kind == .image && filePath != nil
         let imageData: Data? = isImageFile ? nil : snapshot.imageData
-        // Hash file-backed clips by their path, not the flaky pasteboard icon,
-        // so dedupe is stable.
-        let primary: Data = filePath.map { Data($0.utf8) }
+        // File clips store ALL their paths (newline-joined) so a multi-file clip
+        // renders as a name list / count, not a single preview. Hash by the
+        // path(s), not the flaky pasteboard icon, so dedupe is stable.
+        let fileText: String? = filePaths.isEmpty ? nil : filePaths.joined(separator: "\n")
+        let primary: Data = fileText.map { Data($0.utf8) }
             ?? snapshot.imageData
             ?? snapshot.plainText.map { Data($0.utf8) }
             ?? snapshot.rtfData ?? Data()
-        // Persist the file path as textPlain for file clips and for image files
-        // (no inline imageData) so the card can show the name / load a preview.
         let text: String?
         switch kind {
-        case .file:  text = filePath ?? snapshot.plainText
+        case .file:  text = fileText ?? snapshot.plainText
         case .image: text = isImageFile ? filePath : snapshot.plainText
         default:     text = snapshot.plainText
         }

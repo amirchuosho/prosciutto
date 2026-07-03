@@ -54,5 +54,15 @@ final class KindDetectorTests: XCTestCase {
         let jpg = PasteboardSnapshot(fileURLs: [URL(fileURLWithPath: "/tmp/pic.jpeg")])
         XCTAssertEqual(KindDetector.detect(jpg), .image)
     }
+    func testMultipleFilesAreFileNotImage() {
+        // Copying several pics from Finder should be a file clip (names/count),
+        // not a single-image preview of the first one.
+        let pics = PasteboardSnapshot(fileURLs: [
+            URL(fileURLWithPath: "/tmp/a.png"), URL(fileURLWithPath: "/tmp/b.jpg")])
+        XCTAssertEqual(KindDetector.detect(pics), .file)
+        let mixed = PasteboardSnapshot(fileURLs: [
+            URL(fileURLWithPath: "/tmp/a.png"), URL(fileURLWithPath: "/tmp/doc.pdf")])
+        XCTAssertEqual(KindDetector.detect(mixed), .file)
+    }
     func testEmpty() { XCTAssertNil(KindDetector.detect(PasteboardSnapshot())) }
 }

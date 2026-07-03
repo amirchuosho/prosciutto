@@ -404,7 +404,9 @@ struct ClipCard: View {
             if let p = item.textPlain { return (p as NSString).lastPathComponent }
             return "Image"
         case .color: return item.textPlain ?? "Color"
-        case .file:  return item.sourceAppName ?? "File"
+        case .file:
+            let count = (item.textPlain ?? "").split(separator: "\n").count
+            return count > 1 ? "\(count) files" : (item.sourceAppName ?? "File")
         case .location: return "Location"
         }
     }

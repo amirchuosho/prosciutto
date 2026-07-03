@@ -8,8 +8,11 @@ public enum KindDetector {
         ["png", "jpg", "jpeg", "gif", "heic", "heif", "webp", "tiff", "tif", "bmp"]
 
     public static func detect(_ s: PasteboardSnapshot) -> ClipKind? {
+        // Multiple files (e.g. several pics from Finder) → a file clip that lists
+        // names/count, NOT a single-image preview of just the first one.
+        if s.fileURLs.count > 1 { return .file }
         if let file = s.fileURLs.first {
-            // An image file (copied from Finder) is treated as an image, not a file.
+            // A single image file (copied from Finder) is treated as an image.
             return imageExtensions.contains(file.pathExtension.lowercased()) ? .image : .file
         }
         if s.imageData != nil { return .image }
