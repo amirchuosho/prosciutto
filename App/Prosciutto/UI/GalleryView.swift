@@ -124,15 +124,11 @@ struct GalleryView: View {
     private var panelBackground: some View {
         ZStack {
             RoundedRectangle(cornerRadius: DS.Radius.panel, style: .continuous).fill(.ultraThinMaterial)
-            if scheme == .light {
-                RoundedRectangle(cornerRadius: DS.Radius.panel, style: .continuous)
-                    .fill(DS.panelFill(.light).opacity(0.86))
-            } else {
-                RadialGradient(colors: [theme.accent.opacity(0.10), .clear],
-                               center: .bottom, startRadius: 4, endRadius: 480)
-            }
             RoundedRectangle(cornerRadius: DS.Radius.panel, style: .continuous)
-                .strokeBorder(scheme == .dark ? .white.opacity(0.10) : .black.opacity(0.08), lineWidth: 1)
+                .fill(theme.palette.background.style)
+                .opacity(theme.palette.isDark ? 0.92 : 0.96)
+            RoundedRectangle(cornerRadius: DS.Radius.panel, style: .continuous)
+                .strokeBorder(theme.palette.hairline, lineWidth: 1)
         }
         .compositingGroup()
     }
@@ -208,9 +204,9 @@ struct GalleryView: View {
         } label: {
             Image(systemName: style.icon)
                 .font(.system(size: 11, weight: .bold))
-                .foregroundStyle(on ? style.onColor : style.color)
+                .foregroundStyle(on ? theme.palette.color(for: kind).readableText : theme.palette.color(for: kind))
                 .frame(width: 27, height: 27)
-                .background(Circle().fill(on ? AnyShapeStyle(style.color) : AnyShapeStyle(style.color.opacity(0.16))))
+                .background(Circle().fill(on ? AnyShapeStyle(theme.palette.color(for: kind)) : AnyShapeStyle(theme.palette.color(for: kind).opacity(0.16))))
         }
         .buttonStyle(.plain)
         .help(kind.rawValue.capitalized)
@@ -221,7 +217,7 @@ struct GalleryView: View {
         VStack(spacing: 8) {
             Image(systemName: "pin.fill").font(.system(size: 11, weight: .bold))
                 .foregroundStyle(theme.accent)
-            RoundedRectangle(cornerRadius: 1).fill(DS.hairline(scheme))
+            RoundedRectangle(cornerRadius: 1).fill(theme.palette.hairline)
                 .frame(width: 2)
         }
         .frame(width: 28)
@@ -285,7 +281,7 @@ struct GalleryView: View {
         }
         .foregroundStyle(.white)
         .padding(.horizontal, 12).padding(.vertical, 8)
-        .background(Capsule().fill(style.color.gradient))
+        .background(Capsule().fill(theme.palette.color(for: item.kind).gradient))
     }
 
     private func scrollToSelection(_ proxy: ScrollViewProxy) {
