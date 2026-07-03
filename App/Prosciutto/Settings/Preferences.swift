@@ -13,8 +13,6 @@ final class Preferences {
         static let soundEnabled = "capture.soundEnabled"
         static let soundName = "capture.soundName"
         static let pasteAutomatically = "paste.automatically"
-        static let appearance = "theme.appearance"
-        static let accentTheme = "theme.accent"
         static let customAccentHex = "theme.customAccentHex"
         static let theme = "theme.name"
         static let openKeyCode = "hotkey.open.keyCode"
@@ -26,16 +24,6 @@ final class Preferences {
         static let saveFiles = "capture.saveFiles"
         static let maxItemSizeBytes = "capture.maxItemSizeBytes"
         static let useFuzzySearch = "search.useFuzzy"
-    }
-
-    var appearanceRaw: String {
-        get { defaults.string(forKey: Keys.appearance) ?? "system" }
-        set { defaults.set(newValue, forKey: Keys.appearance) }
-    }
-
-    var accentThemeRaw: String {
-        get { defaults.string(forKey: Keys.accentTheme) ?? "prosciutto" }
-        set { defaults.set(newValue, forKey: Keys.accentTheme) }
     }
 
     var customAccentHex: String {

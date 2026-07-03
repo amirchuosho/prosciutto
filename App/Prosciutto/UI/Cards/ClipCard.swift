@@ -432,6 +432,8 @@ extension ClipCard: Equatable {
         lhs.item.sectionID == rhs.item.sectionID &&
         lhs.item.lastUsedAt == rhs.item.lastUsedAt &&
         lhs.palette.surface == rhs.palette.surface &&
-        lhs.palette.color(for: lhs.item.kind) == rhs.palette.color(for: rhs.item.kind)
+        lhs.palette.color(for: lhs.item.kind) == rhs.palette.color(for: rhs.item.kind) &&
+        lhs.palette.hairline == rhs.palette.hairline &&
+        lhs.palette.secondary == rhs.palette.secondary
     }
 }

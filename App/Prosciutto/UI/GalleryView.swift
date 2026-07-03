@@ -6,7 +6,6 @@ struct GalleryView: View {
     @EnvironmentObject var theme: ThemeManager
     @FocusState private var searchFocused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.colorScheme) private var scheme
     @State private var editingSection: ClipSection?
     @State private var showingAddSection = false
     @State private var newSectionName = ""

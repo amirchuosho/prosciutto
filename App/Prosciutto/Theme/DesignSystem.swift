@@ -26,24 +26,6 @@ enum DS {
         static let appIcon: CGFloat = 30
     }
 
-    // Adaptive surfaces: dark glass vs Paste-style warm cream.
-    static func cardBody(_ s: ColorScheme) -> Color {
-        s == .dark ? Color(.sRGB, white: 0.11) : .white
-    }
-    static func panelFill(_ s: ColorScheme) -> Color {
-        s == .dark ? Color(.sRGB, white: 0.07).opacity(0.0)
-                   : Color(.sRGB, red: 0.96, green: 0.945, blue: 0.92)   // warm cream
-    }
-    static func cardStroke(_ s: ColorScheme) -> Color {
-        s == .dark ? .white.opacity(0.06) : .black.opacity(0.06)
-    }
-    static func hairline(_ s: ColorScheme) -> Color {
-        s == .dark ? .white.opacity(0.06) : .black.opacity(0.07)
-    }
-    static func footerMeta(_ s: ColorScheme) -> Color {
-        s == .dark ? Color.secondary : Color(.sRGB, white: 0.45)
-    }
-
     enum Typeface {
         /// Custom display font (bundled). Falls back to system if missing.
         static func display(_ size: CGFloat, _ weight: SwiftUI.Font.Weight = .semibold) -> SwiftUI.Font {
