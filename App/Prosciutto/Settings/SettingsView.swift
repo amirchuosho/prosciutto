@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import ProsciuttoKit
 
 struct SettingsView: View {
     @EnvironmentObject var theme: ThemeManager
@@ -136,52 +137,37 @@ struct SettingsView: View {
     private var appearance: some View {
         Form {
             Section("Theme") {
-                Picker("Appearance", selection: $theme.appearance) {
-                    ForEach(Appearance.allCases) { Text($0.label).tag($0) }
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 12)], spacing: 12) {
+                    ForEach(AppTheme.allCases) { t in
+                        let p = ThemePalette(t.spec(customAccentHex: theme.customAccentHex))
+                        Button { theme.theme = t } label: {
+                            VStack(spacing: 6) {
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .fill(p.background.style)
+                                    .frame(height: 54)
+                                    .overlay(
+                                        HStack(spacing: 4) {
+                                            ForEach([ClipKind.text, .code, .link], id: \.self) { k in
+                                                RoundedRectangle(cornerRadius: 4).fill(p.color(for: k)).frame(width: 26, height: 30)
+                                            }
+                                        })
+                                    .overlay(RoundedRectangle(cornerRadius: 10)
+                                        .strokeBorder(theme.theme == t ? AnyShapeStyle(p.accentGradient) : AnyShapeStyle(p.hairline),
+                                                      lineWidth: theme.theme == t ? 3 : 1))
+                                Text(t.label).font(.system(size: 12, weight: .semibold))
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
-                .pickerStyle(.segmented)
-            }
-            Section("Accent") {
-                accentSwatches
-                if theme.accentTheme == .custom {
-                    ColorPicker("Custom color", selection: $theme.customAccentHex.asColor(default: .pink), supportsOpacity: false)
+                if theme.theme == .custom {
+                    ColorPicker("Custom accent", selection: Binding(
+                        get: { Color(hex: theme.customAccentHex) ?? .accentColor },
+                        set: { theme.customAccentHex = $0.toHex() ?? theme.customAccentHex }), supportsOpacity: false)
                 }
             }
         }
         .formStyle(.grouped)
-    }
-
-    private var accentSwatches: some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.fixed(40), spacing: 10), count: 6), spacing: 12) {
-            ForEach(AccentTheme.allCases) { t in
-                let color = t.color(customHex: theme.customAccentHex)
-                Button { theme.accentTheme = t } label: {
-                    VStack(spacing: 5) {
-                        ZStack {
-                            if t == .custom {
-                                // Rainbow wheel signals "pick any colour".
-                                Circle().fill(AngularGradient(
-                                    colors: [.red, .orange, .yellow, .green, .cyan, .blue, .purple, .pink, .red],
-                                    center: .center)).frame(width: 28, height: 28)
-                                Image(systemName: "eyedropper").font(.system(size: 11, weight: .bold))
-                                    .foregroundStyle(.white)
-                                    .shadow(color: .black.opacity(0.4), radius: 1)
-                            } else {
-                                Circle().fill(color).frame(width: 28, height: 28)
-                            }
-                            if theme.accentTheme == t {
-                                Circle().strokeBorder(.primary, lineWidth: 2).frame(width: 34, height: 34)
-                            }
-                        }
-                        .frame(width: 34, height: 34)
-                        Text(t.label).font(.system(size: 9)).foregroundStyle(.secondary)
-                            .lineLimit(1).minimumScaleFactor(0.55).frame(width: 44)
-                    }
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(.vertical, 4)
     }
 
 }
