@@ -253,6 +253,7 @@ struct GalleryView: View {
                                  onEditBody: { newText in Task { await model.updateText(item, newText: newText) } },
                                  onAssignSlot: { n in Task { await model.assignSlot(item, slot: n) } },
                                  onEditingChanged: { model.isEditingTitle = $0 })
+                            .equatable()
                             .id(item.id)
                             .transition(.scale(scale: 0.9).combined(with: .opacity))
                             .draggable(item.id.uuidString) { dragPreview(item) }
@@ -290,10 +291,12 @@ struct GalleryView: View {
         let list = model.filtered()
         guard list.indices.contains(model.selection) else { return }
         let id = list[model.selection].id
-        if reduceMotion { proxy.scrollTo(id, anchor: .center) }
-        // Interruptible spring: rapid arrow taps re-target smoothly instead of
-        // restarting a fixed-duration ease (which glitched every few taps).
-        else { withAnimation(.spring(response: 0.22, dampingFraction: 0.9)) { proxy.scrollTo(id, anchor: .center) } }
+        // Instant, keep-visible. Any *animated* scroll drops render-server frames
+        // compositing the rich moving strip at 120Hz (main thread is idle — it's
+        // GPU), which reads as a hiccup; instant has no motion to drop. anchor:nil
+        // (not .center) keeps it calm: moves the strip the minimum to keep the
+        // selected card visible, so navigating among visible cards doesn't jump it.
+        proxy.scrollTo(id, anchor: nil)
     }
 
     /// The section a card is filed in, as a (name, colour) tag. Type stays the

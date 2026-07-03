@@ -408,3 +408,27 @@ struct ClipCard: View {
         }
     }
 }
+
+extension ClipCard: Equatable {
+    /// Skip re-rendering cards whose render-affecting inputs didn't change. Without
+    /// this, every arrow-key selection change re-runs GalleryView.body and hands
+    /// each visible card fresh (non-equatable) action closures, so SwiftUI can't
+    /// bail out and rebuilds ALL ~7 card bodies per tap — a ~33ms main-thread
+    /// stall that drops a frame. Comparing only the value inputs (closures and
+    /// imageData excluded) lets only the two cards whose `isSelected` flips rebuild.
+    static func == (lhs: ClipCard, rhs: ClipCard) -> Bool {
+        lhs.isSelected == rhs.isSelected &&
+        lhs.index == rhs.index &&
+        lhs.slotCount == rhs.slotCount &&
+        lhs.accent == rhs.accent &&
+        lhs.section?.name == rhs.section?.name &&
+        lhs.section?.color == rhs.section?.color &&
+        lhs.item.id == rhs.item.id &&
+        lhs.item.contentHash == rhs.item.contentHash &&
+        lhs.item.title == rhs.item.title &&
+        lhs.item.isPinned == rhs.item.isPinned &&
+        lhs.item.pinOrder == rhs.item.pinOrder &&
+        lhs.item.sectionID == rhs.item.sectionID &&
+        lhs.item.lastUsedAt == rhs.item.lastUsedAt
+    }
+}
