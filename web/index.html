@@ -1,292 +1,352 @@
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Prosciutto — the clipboard manager for macOS that's actually delicious</title>
-  <meta name="description" content="A free, open-source, ridiculously good-looking clipboard manager for macOS. 9 unhinged themes, quick-paste, search, and zero dollars. brew install and go." />
-  <meta name="theme-color" content="#141018" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Prosciutto — the clipboard manager that dresses up</title>
+<meta name="description" content="A free, open-source, absurdly good-looking clipboard manager for macOS. Nine full themes that re-skin the whole app. Quick-paste, search, zero dollars. brew install and go." />
+<meta name="theme-color" content="#141018" />
+<meta property="og:title" content="Prosciutto — a delicious clipboard manager for macOS" />
+<meta property="og:description" content="Free, open-source, gorgeous. Nine themes that re-skin the whole app. brew install --cask amirchuosho/prosciutto/prosciutto" />
+<meta property="og:url" content="https://prosciutto.io" />
+<meta name="twitter:card" content="summary_large_image" />
+<link rel="icon" href="icon.png" />
+<link rel="apple-touch-icon" href="icon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+:root{
+  /* default theme: Prosciutto */
+  --bg:#141018; --bg2:#241326; --surface:#1E1B24; --ink:#F3EEF5; --muted:#B3A6BC;
+  --accent:#FF70A3; --accent2:#FF4566; --line:rgba(255,255,255,.10);
+  --c-text:#5C8FFF; --c-code:#52CC85; --c-link:#C77DFF; --c-color:#FF6FB0; --c-image:#FF9E5C;
+  --shadow:0 30px 80px -30px rgba(255,69,102,.45);
+  --r:20px; --font-d:"Bricolage Grotesque"; --font-b:"Hanken Grotesk"; --font-m:"JetBrains Mono";
+}
+[data-theme="synthwave"]{--bg:#160b2e;--bg2:#3d1a4d;--surface:#241640;--ink:#F3E9FF;--muted:#B79EE6;--accent:#FF3CAC;--accent2:#7A2FF7;--line:rgba(255,120,220,.16);--c-text:#00E5FF;--c-code:#39FF9E;--c-link:#FF6AD5;--c-color:#FF3CAC;--c-image:#FFB03C;--shadow:0 30px 80px -30px rgba(255,60,172,.5)}
+[data-theme="matrix"]{--bg:#030603;--bg2:#06170a;--surface:#0B140B;--ink:#CFF7CF;--muted:#6FBF6F;--accent:#39FF14;--accent2:#00C853;--line:rgba(57,255,20,.18);--c-text:#39FF14;--c-code:#00E676;--c-link:#A6FF00;--c-color:#7CFFB0;--c-image:#B7FF3C;--shadow:0 30px 80px -30px rgba(57,255,20,.35)}
+[data-theme="dracula"]{--bg:#21222c;--bg2:#282a36;--surface:#343746;--ink:#F8F8F2;--muted:#AEB0C4;--accent:#BD93F9;--accent2:#FF79C6;--line:rgba(255,255,255,.1);--c-text:#8BE9FD;--c-code:#50FA7B;--c-link:#FF79C6;--c-color:#BD93F9;--c-image:#FFB86C;--shadow:0 30px 80px -30px rgba(189,147,249,.45)}
+[data-theme="nord"]{--bg:#242933;--bg2:#2E3440;--surface:#3B4252;--ink:#ECEFF4;--muted:#9AA6BC;--accent:#88C0D0;--accent2:#5E81AC;--line:rgba(255,255,255,.09);--c-text:#81A1C1;--c-code:#A3BE8C;--c-link:#B48EAD;--c-color:#88C0D0;--c-image:#D08770;--shadow:0 30px 80px -30px rgba(136,192,208,.4)}
+[data-theme="vaporwave"]{--bg:#1b1130;--bg2:#3a2352;--surface:#2E2246;--ink:#F5ECFF;--muted:#BBA9E6;--accent:#FF6AD5;--accent2:#8C6AFF;--line:rgba(140,240,232,.16);--c-text:#8CF0E8;--c-code:#C6A6FF;--c-link:#FFB8E0;--c-color:#FF6AD5;--c-image:#FFD08C;--shadow:0 30px 80px -30px rgba(255,106,213,.5)}
+[data-theme="cyberpunk"]{--bg:#060609;--bg2:#0f0f18;--surface:#13131C;--ink:#EDEDF5;--muted:#8E8EA6;--accent:#FCEE0A;--accent2:#00F0FF;--line:rgba(0,240,255,.2);--c-text:#00F0FF;--c-code:#00FF9F;--c-link:#FF00A0;--c-color:#FCEE0A;--c-image:#FF6A00;--shadow:0 30px 80px -30px rgba(252,238,10,.4)}
+[data-theme="gruvbox"]{--bg:#1d2021;--bg2:#282828;--surface:#32302F;--ink:#F2E5BC;--muted:#A89984;--accent:#FE8019;--accent2:#D65D0E;--line:rgba(235,219,178,.12);--c-text:#83A598;--c-code:#B8BB26;--c-link:#D3869B;--c-color:#8EC07C;--c-image:#FABD2F;--shadow:0 30px 80px -30px rgba(254,128,25,.4)}
+[data-theme="daylight"]{--bg:#EDE9F1;--bg2:#F6F3F7;--surface:#FFFFFF;--ink:#241F2B;--muted:#6E6676;--accent:#FF4566;--accent2:#FF70A3;--line:rgba(40,30,50,.1);--c-text:#3B6FE0;--c-code:#1E9E56;--c-link:#9042CC;--c-color:#D6478C;--c-image:#E07A26;--shadow:0 30px 80px -30px rgba(255,69,102,.3)}
 
-  <!-- Open Graph / social -->
-  <meta property="og:type" content="website" />
-  <meta property="og:title" content="Prosciutto — a delicious clipboard manager for macOS" />
-  <meta property="og:description" content="Free, open-source, gorgeous. 9 unhinged themes. brew install --cask amirchuosho/prosciutto/prosciutto" />
-  <meta property="og:url" content="https://prosciutto.io" />
-  <meta name="twitter:card" content="summary_large_image" />
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--font-b),system-ui,sans-serif;
+  background:var(--bg); color:var(--ink);
+  -webkit-font-smoothing:antialiased; overflow-x:hidden;
+  transition:background .55s cubic-bezier(.22,1,.36,1), color .55s cubic-bezier(.22,1,.36,1);
+}
+body::before{ /* theme-tinted ambient glow */
+  content:""; position:fixed; inset:0; z-index:-1; pointer-events:none;
+  background:
+    radial-gradient(60% 50% at 80% -5%, color-mix(in oklab, var(--accent) 22%, transparent), transparent 70%),
+    radial-gradient(55% 45% at 10% 8%, color-mix(in oklab, var(--accent2) 16%, transparent), transparent 70%),
+    linear-gradient(180deg, var(--bg2), var(--bg) 45%);
+  transition:background .55s ease;
+}
+::selection{background:var(--accent2); color:#fff}
+a{color:inherit; text-decoration:none}
+.wrap{max-width:1120px; margin:0 auto; padding:0 22px}
+.display{font-family:var(--font-d); font-weight:800; letter-spacing:-.03em; line-height:.98; text-wrap:balance}
+.mono{font-family:var(--font-m)}
 
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="icon" href="icon.png" />
-  <link rel="apple-touch-icon" href="icon.png" />
+/* ---- nav ---- */
+nav{position:sticky; top:0; z-index:50; backdrop-filter:blur(12px);
+  background:color-mix(in oklab, var(--bg) 70%, transparent); border-bottom:1px solid var(--line)}
+nav .wrap{display:flex; align-items:center; justify-content:space-between; height:64px}
+.brand{display:flex; align-items:center; gap:10px; font-family:var(--font-d); font-weight:800; font-size:20px}
+.brand img{width:30px; height:30px; border-radius:9px}
+.nav-links{display:flex; align-items:center; gap:22px; font-weight:600; font-size:15px}
+.nav-links a:not(.btn){color:var(--muted)} .nav-links a:not(.btn):hover{color:var(--ink)}
+.btn{display:inline-flex; align-items:center; gap:8px; font-weight:700; border-radius:999px;
+  padding:11px 20px; background:var(--accent); color:#12101a; transition:transform .2s, filter .2s; border:none; cursor:pointer}
+.btn:hover{transform:translateY(-2px); filter:brightness(1.06)}
+.btn.ghost{background:transparent; color:var(--ink); border:1.5px solid var(--line)}
+.hide-sm{display:none} @media(min-width:720px){.hide-sm{display:flex}}
 
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: { sans: ['Outfit', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
-          colors: {
-            ink: '#0E0C12',
-            surface: '#1E1B24',
-            ham: { DEFAULT: '#FF70A3', deep: '#FF4566' },
-          },
-        },
-      },
-    };
-  </script>
-  <style>
-    body { background: radial-gradient(120% 90% at 50% -10%, #241326 0%, #0E0C12 55%); }
-    .ham-text { background: linear-gradient(120deg, #FF70A3, #FF4566); -webkit-background-clip: text; background-clip: text; color: transparent; }
-    .glass { background: rgba(30,27,36,.55); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
-    .card-shadow { box-shadow: 0 20px 60px -20px rgba(255,69,102,.35); }
-    @keyframes float { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-10px) } }
-    .float { animation: float 6s ease-in-out infinite; }
-    /* Auto-browsing selection ring on the hero preview cards */
-    .preview-card.sel { outline: 3px solid #FF4566; outline-offset: 0; transform: translateY(-6px) scale(1.05); box-shadow: 0 16px 40px -12px rgba(255,69,102,.55); z-index: 5; }
-    @media (prefers-reduced-motion: reduce) { .float { animation: none } .preview-card { transition: none !important } }
-    .reveal { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
-    .reveal.in { opacity: 1; transform: none; }
-    ::selection { background: #FF4566; color: white; }
-  </style>
+/* ---- hero ---- */
+.hero{padding:clamp(56px,10vw,120px) 0 40px; text-align:center; position:relative}
+.hero h1{font-size:clamp(46px,9vw,92px)}
+.hero h1 em{font-style:normal; color:var(--accent); position:relative; white-space:nowrap}
+.hero h1 em::after{content:""; position:absolute; left:-2%; right:-2%; bottom:.06em; height:.14em;
+  background:var(--accent2); border-radius:4px; opacity:.9; transform:scaleX(0); transform-origin:left;
+  animation:wipe .7s .5s cubic-bezier(.22,1,.36,1) forwards}
+@keyframes wipe{to{transform:scaleX(1)}}
+.hero p.lede{max-width:660px; margin:22px auto 0; font-size:clamp(17px,2.4vw,21px); color:var(--muted); line-height:1.55}
+.chip{display:inline-flex; align-items:center; gap:8px; padding:7px 15px; border-radius:999px; font-size:13px; font-weight:600;
+  border:1px solid var(--line); color:var(--muted); background:color-mix(in oklab,var(--surface) 60%, transparent)}
+.dot{width:8px;height:8px;border-radius:50%;background:#3ddc84;box-shadow:0 0 10px #3ddc84}
+.install{display:flex; flex-wrap:wrap; gap:12px; justify-content:center; align-items:center; margin-top:30px}
+.cmd{display:flex; align-items:center; gap:12px; padding:14px 18px; border-radius:14px; border:1px solid var(--line);
+  background:color-mix(in oklab,var(--surface) 75%, transparent); font-family:var(--font-m); font-size:14.5px; max-width:100%}
+.cmd code{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.cmd .pmt{color:var(--accent); font-weight:600}
+.copy{border:none; background:var(--ink); color:var(--bg); font-family:var(--font-b); font-weight:700; font-size:12.5px;
+  padding:6px 11px; border-radius:8px; cursor:pointer; flex:none}
+.subtle{margin-top:12px; font-size:13.5px; color:var(--muted)}
+.reveal{opacity:0; transform:translateY(22px)}
+.in{opacity:1; transform:none; transition:opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1)}
+
+/* ---- gallery mock ---- */
+.stage{margin:clamp(40px,7vw,72px) auto 0; max-width:940px; perspective:1400px}
+.panel{border-radius:24px; border:1px solid var(--line); padding:16px;
+  background:color-mix(in oklab,var(--surface) 70%, transparent); box-shadow:var(--shadow);
+  transform:rotateX(9deg); transform-style:preserve-3d; transition:transform .6s ease}
+.stage:hover .panel{transform:rotateX(3deg)}
+.panel .bar{display:flex; align-items:center; gap:7px; padding:2px 4px 12px}
+.panel .bar i{width:11px;height:11px;border-radius:50%;display:inline-block}
+.panel .bar b{margin-left:10px; font-size:12px; color:var(--muted); font-weight:600; font-family:var(--font-b)}
+.strip{display:grid; grid-template-columns:repeat(5,1fr); gap:12px}
+@media(max-width:640px){.strip{grid-template-columns:repeat(2,1fr)}}
+.tile{border-radius:14px; overflow:hidden; background:var(--surface); border:1px solid var(--line);
+  transition:transform .35s cubic-bezier(.22,1,.36,1), box-shadow .35s, outline-color .2s; outline:3px solid transparent}
+.tile .head{padding:8px 11px; font-family:var(--font-b); font-weight:700; font-size:11.5px; color:#0d0d12}
+.tile .body{padding:11px; font-size:11px; color:var(--muted); min-height:52px}
+.tile.sel{outline-color:var(--accent2); transform:translateY(-10px) scale(1.06); box-shadow:0 20px 44px -14px color-mix(in oklab,var(--accent) 60%,transparent); z-index:2}
+.swatch{width:26px;height:26px;border-radius:7px;border:1px solid var(--line)}
+.thumb{height:52px;background:
+   conic-gradient(from 210deg, var(--c-image), var(--c-color), var(--c-link), var(--c-text), var(--c-image));
+   display:grid;place-items:center;font-size:17px}
+
+/* ---- section frame ---- */
+section{padding:clamp(64px,10vw,120px) 0}
+.kicker{font-family:var(--font-m); font-size:13px; color:var(--accent); font-weight:600; margin-bottom:14px}
+h2.big{font-size:clamp(34px,6vw,64px)}
+h2.big em{font-style:normal;color:var(--accent)}
+.lead2{color:var(--muted); font-size:clamp(16px,2vw,19px); max-width:60ch; margin-top:16px; line-height:1.55}
+
+/* ---- theme switch (centerpiece) ---- */
+.themeband{text-align:center}
+.pills{display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:30px}
+.pill{cursor:pointer; border:1.5px solid var(--line); background:color-mix(in oklab,var(--surface) 60%, transparent);
+  color:var(--ink); font-weight:700; font-size:14px; padding:9px 16px; border-radius:999px; display:inline-flex; gap:9px; align-items:center;
+  transition:transform .2s, border-color .2s, background .2s}
+.pill:hover{transform:translateY(-2px)}
+.pill .sw{width:16px;height:16px;border-radius:50%}
+.pill[aria-pressed="true"]{border-color:var(--accent); background:color-mix(in oklab,var(--accent) 18%, var(--surface)); transform:translateY(-2px)}
+.themehint{margin-top:18px; font-size:14px; color:var(--muted)}
+
+/* ---- steps (real sequence) ---- */
+.steps{display:grid; gap:20px; margin-top:44px; grid-template-columns:1fr}
+@media(min-width:800px){.steps{grid-template-columns:repeat(3,1fr)}}
+.step{position:relative; padding:26px 22px; border-radius:var(--r); border:1px solid var(--line); background:color-mix(in oklab,var(--surface) 55%, transparent)}
+.step .n{font-family:var(--font-d); font-weight:800; font-size:54px; color:var(--accent); line-height:1}
+.step h3{font-family:var(--font-d); font-size:22px; margin:6px 0 8px}
+.step p{color:var(--muted); font-size:15px; line-height:1.5}
+.kbd{font-family:var(--font-m); font-size:13px; background:var(--bg); border:1px solid var(--line); border-radius:7px; padding:2px 8px; color:var(--ink)}
+
+/* ---- bento features (varied, not identical) ---- */
+.bento{display:grid; gap:16px; margin-top:44px; grid-template-columns:1fr}
+@media(min-width:760px){.bento{grid-template-columns:repeat(6,1fr); grid-auto-rows:1fr}}
+.cell{border-radius:var(--r); border:1px solid var(--line); padding:26px; background:color-mix(in oklab,var(--surface) 55%, transparent);
+  transition:transform .3s, border-color .3s; position:relative; overflow:hidden}
+.cell:hover{transform:translateY(-4px); border-color:color-mix(in oklab,var(--accent) 50%, var(--line))}
+.cell .ico{font-size:30px} .cell h3{font-family:var(--font-d); font-size:21px; margin:12px 0 8px} .cell p{color:var(--muted); line-height:1.5; font-size:15px}
+@media(min-width:760px){
+  .c-a{grid-column:span 3} .c-b{grid-column:span 3}
+  .c-c{grid-column:span 2} .c-d{grid-column:span 2} .c-e{grid-column:span 2}
+  .c-f{grid-column:span 3} .c-g{grid-column:span 3}
+}
+.cell.big h3{font-size:26px}
+.kbds{display:flex;gap:6px;margin-top:14px;flex-wrap:wrap}
+
+/* ---- reviews marquee ---- */
+.marquee{margin-top:40px; -webkit-mask:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent); mask:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)}
+.track{display:flex; gap:18px; width:max-content; animation:scroll 46s linear infinite}
+.marquee:hover .track{animation-play-state:paused}
+@keyframes scroll{to{transform:translateX(-50%)}}
+.quote{width:360px; flex:none; border-radius:var(--r); border:1px solid var(--line); background:color-mix(in oklab,var(--surface) 55%, transparent); padding:24px}
+.quote p{font-size:16px; line-height:1.5}
+.who{display:flex; align-items:center; gap:12px; margin-top:16px}
+.who .av{width:44px;height:44px;border-radius:50%;overflow:hidden;position:relative;flex:none;display:grid;place-items:center;font-size:18px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2))}
+.who .av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.who b{font-family:var(--font-b);font-size:14.5px} .who span{display:block;font-size:12.5px;color:var(--muted)}
+.disc{text-align:center;color:var(--muted);font-size:13.5px;margin-top:26px}
+
+/* ---- CTA ---- */
+.cta{text-align:center}
+.cta .box{border-radius:30px; padding:clamp(36px,6vw,60px); position:relative; overflow:hidden;
+  background:linear-gradient(140deg, color-mix(in oklab,var(--accent) 26%, var(--surface)), var(--surface));
+  border:1px solid color-mix(in oklab,var(--accent) 40%, var(--line))}
+.cta img.hambig{width:72px;height:72px;border-radius:18px}
+.cta h2{font-family:var(--font-d); font-weight:800; font-size:clamp(30px,5vw,52px); margin-top:12px; letter-spacing:-.03em}
+.cta .install{margin-top:26px}
+
+footer{border-top:1px solid var(--line); padding:34px 0; margin-top:20px}
+footer .wrap{display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between; color:var(--muted); font-size:14px}
+footer .brand{font-size:16px; color:var(--ink)} footer a:hover{color:var(--ink)}
+
+@media (prefers-reduced-motion: reduce){
+  *{animation:none !important; transition:none !important; scroll-behavior:auto !important}
+  .reveal{opacity:1; transform:none}
+  .hero h1 em::after{transform:scaleX(1)}
+}
+</style>
 </head>
-<body class="font-sans text-white/90 antialiased selection:bg-ham-deep">
+<body data-theme="prosciutto">
 
-  <!-- Nav -->
-  <header class="sticky top-0 z-50 glass border-b border-white/5">
-    <nav class="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
-      <a href="#" class="flex items-center gap-2 font-extrabold text-lg">
-        <img src="icon.png" alt="Prosciutto" class="h-7 w-7 rounded-lg" /> Prosciutto
-      </a>
-      <div class="flex items-center gap-3 text-sm">
-        <a href="#themes" class="hidden sm:inline text-white/70 hover:text-white transition">Themes</a>
-        <a href="#features" class="hidden sm:inline text-white/70 hover:text-white transition">Features</a>
-        <a href="#reviews" class="hidden sm:inline text-white/70 hover:text-white transition">Reviews</a>
-        <a href="https://github.com/amirchuosho/prosciutto" class="text-white/70 hover:text-white transition">GitHub ↗</a>
-        <a href="#install" class="rounded-full bg-gradient-to-r from-ham to-ham-deep px-4 py-2 font-semibold text-white card-shadow hover:brightness-110 transition">Install</a>
-      </div>
-    </nav>
-  </header>
-
-  <!-- Hero -->
-  <section class="mx-auto max-w-6xl px-5 pt-16 pb-10 sm:pt-24 text-center">
-    <div class="mb-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium text-white/70">
-      <span class="h-2 w-2 rounded-full bg-green-400"></span> Free forever · Open source · macOS 14+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#"><img src="icon.png" alt="Prosciutto" /> Prosciutto</a>
+    <div class="nav-links">
+      <a href="#themes" class="hide-sm">Themes</a>
+      <a href="#how" class="hide-sm">How</a>
+      <a href="#reviews" class="hide-sm">Reviews</a>
+      <a href="https://github.com/amirchuosho/prosciutto" class="hide-sm">GitHub</a>
+      <a href="#install" class="btn">Install</a>
     </div>
-    <h1 class="mx-auto max-w-4xl text-5xl font-extrabold leading-[1.05] sm:text-7xl">
-      The clipboard manager that's<br class="hidden sm:block" /> <span class="ham-text">actually delicious.</span>
-    </h1>
-    <p class="mx-auto mt-6 max-w-2xl text-lg text-white/70">
-      Prosciutto remembers everything you copy, dresses it up in 9 gloriously unhinged themes,
-      and pastes it back in a single keystroke. Native. Fast. Zero dollars. No sign-up. No nonsense.
-    </p>
+  </div>
+</nav>
 
-    <!-- Install one-liner -->
-    <div class="mx-auto mt-8 flex max-w-xl flex-col items-center gap-3 sm:flex-row sm:justify-center">
-      <div class="flex w-full items-center gap-3 rounded-xl border border-white/10 bg-black/40 px-4 py-3 font-mono text-sm">
-        <span class="text-ham">$</span>
-        <code id="install-cmd" class="flex-1 truncate text-left text-white/90">brew install --cask amirchuosho/prosciutto/prosciutto</code>
-        <button onclick="copyInstall()" class="shrink-0 rounded-md bg-white/10 px-2.5 py-1 text-xs font-semibold hover:bg-white/20 transition" id="copy-btn">Copy</button>
-      </div>
-      <a href="https://github.com/amirchuosho/prosciutto" class="w-full sm:w-auto shrink-0 rounded-xl bg-gradient-to-r from-ham to-ham-deep px-6 py-3 text-center font-semibold card-shadow hover:brightness-110 transition">★ Star on GitHub</a>
-    </div>
-    <p class="mt-3 text-xs text-white/40">Installs via Homebrew. No account, no sign-up — the cask even clears macOS Gatekeeper for you. You're welcome.</p>
+<header class="hero wrap">
+  <span class="chip reveal" data-d="0"><span class="dot"></span> Free forever · Open source · macOS 14+</span>
+  <h1 class="display reveal" data-d="1" style="margin-top:22px">Your clipboard,<br>now <em>worth looking at.</em></h1>
+  <p class="lede reveal" data-d="2">Prosciutto remembers everything you copy and hands it back in one keystroke — as a fast, colour-coded gallery that comes in nine wildly different outfits. Native. Private. Zero dollars.</p>
+  <div class="install reveal" data-d="3">
+    <div class="cmd"><span class="pmt">$</span><code id="cmd">brew install --cask amirchuosho/prosciutto/prosciutto</code><button class="copy" onclick="copyCmd(this)">Copy</button></div>
+    <a class="btn ghost" href="https://github.com/amirchuosho/prosciutto">★ Star on GitHub</a>
+  </div>
+  <p class="subtle reveal" data-d="4">One command. No account, no sign-up — the cask even clears macOS Gatekeeper for you.</p>
 
-    <!-- Hero gallery mock -->
-    <div class="float mt-14">
-      <div class="mx-auto max-w-4xl rounded-2xl border border-white/10 glass p-4 card-shadow">
-        <div class="mb-3 flex items-center gap-2 px-1">
-          <span class="h-3 w-3 rounded-full bg-red-400/80"></span>
-          <span class="h-3 w-3 rounded-full bg-yellow-400/80"></span>
-          <span class="h-3 w-3 rounded-full bg-green-400/80"></span>
-          <span class="ml-3 text-xs text-white/40">Prosciutto — ⌘⇧V</span>
-        </div>
-        <div class="grid grid-cols-2 gap-3 sm:grid-cols-5" id="preview-strip">
-          <div class="preview-card overflow-hidden rounded-xl bg-surface ring-1 ring-white/10 transition-all duration-300">
-            <div class="bg-[#5C8FFF] px-3 py-2 text-xs font-bold text-white">≣ Text</div>
-            <div class="p-3 text-left text-[11px] text-white/70">psql postgres</div>
-          </div>
-          <div class="preview-card overflow-hidden rounded-xl bg-surface ring-1 ring-white/10 transition-all duration-300">
-            <div class="bg-[#52CC85] px-3 py-2 text-xs font-bold text-black/80">‹› Code</div>
-            <div class="p-3 text-left font-mono text-[11px] text-white/70">SELECT * FROM users;</div>
-          </div>
-          <div class="preview-card overflow-hidden rounded-xl bg-surface ring-1 ring-white/10 transition-all duration-300">
-            <div class="bg-[#C77DFF] px-3 py-2 text-xs font-bold text-black/80">🔗 Link</div>
-            <div class="p-3 text-left text-[11px] text-white/70">prosciutto.io</div>
-          </div>
-          <div class="preview-card overflow-hidden rounded-xl bg-surface ring-1 ring-white/10 transition-all duration-300">
-            <div class="bg-[#FF6FB0] px-3 py-2 text-xs font-bold text-black/80">🎨 Color</div>
-            <div class="p-3 text-left">
-              <div class="flex items-center gap-2">
-                <span class="h-6 w-6 rounded-md ring-1 ring-white/20" style="background:#7C5CFF"></span>
-                <code class="font-mono text-[11px] text-white/80">#7C5CFF</code>
-                <span class="ml-auto grid h-5 w-5 place-items-center rounded-full text-[9px]" style="background:conic-gradient(red,orange,yellow,lime,cyan,blue,magenta,red)">🎯</span>
-              </div>
-            </div>
-          </div>
-          <div class="preview-card overflow-hidden rounded-xl bg-surface ring-1 ring-white/10 transition-all duration-300">
-            <div class="bg-[#FF9E5C] px-3 py-2 text-xs font-bold text-black/80">▣ Image</div>
-            <div class="relative h-[52px]">
-              <div class="absolute inset-0 bg-gradient-to-br from-fuchsia-400/70 via-orange-300/60 to-sky-400/70"></div>
-              <div class="absolute inset-0 grid place-items-center text-white/90 text-lg drop-shadow">🖼️</div>
-            </div>
-          </div>
-        </div>
+  <div class="stage reveal" data-d="5">
+    <div class="panel">
+      <div class="bar"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i><b>Prosciutto — ⌘⇧V</b></div>
+      <div class="strip" id="strip">
+        <div class="tile"><div class="head" style="background:var(--c-text)">≣ Text</div><div class="body mono">psql postgres</div></div>
+        <div class="tile"><div class="head" style="background:var(--c-code)">‹› Code</div><div class="body mono">SELECT * FROM users;</div></div>
+        <div class="tile"><div class="head" style="background:var(--c-link)">🔗 Link</div><div class="body">prosciutto.io</div></div>
+        <div class="tile"><div class="head" style="background:var(--c-color)">🎨 Color</div><div class="body"><div style="display:flex;gap:8px;align-items:center"><span class="swatch" style="background:#7C5CFF"></span><span class="mono">#7C5CFF</span></div></div></div>
+        <div class="tile"><div class="head" style="background:var(--c-image)">▣ Image</div><div class="thumb">🖼️</div></div>
       </div>
     </div>
-  </section>
+  </div>
+</header>
 
-  <!-- Themes -->
-  <section id="themes" class="mx-auto max-w-6xl px-5 py-20">
-    <div class="reveal text-center">
-      <h2 class="text-4xl font-extrabold sm:text-5xl">Dress it up. Or down. <span class="ham-text">Or unhinged.</span></h2>
-      <p class="mx-auto mt-4 max-w-2xl text-white/70">Nine full themes — background, card surfaces, per-type colors, accent — not just a boring accent swatch. Pick a whole vibe.</p>
+<!-- THEME CENTERPIECE -->
+<section id="themes" class="wrap themeband">
+  <p class="kicker reveal">yes, this whole page just changed</p>
+  <h2 class="big display reveal">Nine outfits. <em>Try them on this page.</em></h2>
+  <p class="lead2 reveal" style="margin:16px auto 0">Every theme in Prosciutto re-skins the entire app — background, card surfaces, per-type colours, accent. Not a swatch. A whole mood. Tap one and watch this site wear it too:</p>
+  <div class="pills reveal" id="pills"></div>
+  <p class="themehint reveal">…and there's a Custom option for the one colour only you love.</p>
+</section>
+
+<!-- HOW -->
+<section id="how" class="wrap">
+  <p class="kicker reveal">three keys, that's the whole app</p>
+  <h2 class="big display reveal">Copy. Summon. <em>Paste.</em></h2>
+  <div class="steps">
+    <div class="step reveal"><div class="n">1</div><h3>Copy like normal</h3><p>Text, links, code, images, colours, files, even map locations — Prosciutto captures every copy automatically and quietly.</p></div>
+    <div class="step reveal"><div class="n">2</div><h3>Summon the gallery</h3><p>Hit <span class="kbd">⌘⇧V</span>. A strip of colour-coded cards slides up from the bottom, newest first, without leaving your app.</p></div>
+    <div class="step reveal"><div class="n">3</div><h3>Paste in a keystroke</h3><p>Arrow to the card, press <span class="kbd">⏎</span>. Or <span class="kbd">⌘1</span>–<span class="kbd">9</span> for pinned favourites. Gone before you blink.</p></div>
+  </div>
+</section>
+
+<!-- FEATURES bento -->
+<section class="wrap">
+  <p class="kicker reveal">small app, big appetite</p>
+  <h2 class="big display reveal">Everything you'd want. <em>Nothing you wouldn't.</em></h2>
+  <div class="bento">
+    <div class="cell big c-a reveal"><div class="ico">🧠</div><h3>Remembers everything</h3><p>Every copy, searchable in an instant. That thing from three days ago? Start typing — fuzzy search finds it.</p></div>
+    <div class="cell big c-b reveal"><div class="ico">⚡</div><h3>Paste in one keystroke</h3><p>Summon, arrow, return. Or map your nine favourites to ⌘1–9 and never open the gallery at all.</p><div class="kbds"><span class="kbd">⌘⇧V</span><span class="kbd">⏎</span><span class="kbd">⌘1</span></div></div>
+    <div class="cell c-c reveal"><div class="ico">📌</div><h3>Pin &amp; organise</h3><p>Pin the clips you reach for; file the rest into colour-coded sections.</p></div>
+    <div class="cell c-d reveal"><div class="ico">🔒</div><h3>Private by heart</h3><p>Everything stays on your Mac. No cloud, no account, no telemetry.</p></div>
+    <div class="cell c-e reveal"><div class="ico">✏️</div><h3>Edit in place</h3><p>Rename any clip, tweak its text, one-tap format JSON. No modal.</p></div>
+    <div class="cell big c-f reveal"><div class="ico">🎨</div><h3>Nine full themes</h3><p>Synthwave, Matrix, Dracula, Cyberpunk, Vaporwave, Nord, Gruvbox, Daylight, Prosciutto — pick a personality. (You already met them above.)</p></div>
+    <div class="cell big c-g reveal"><div class="ico">🍺</div><h3>Free, forever, one command</h3><p>Open source under MIT. Install with Homebrew, no account, no catch. Star it, fork it, break it, fix it.</p></div>
+  </div>
+</section>
+
+<!-- REVIEWS -->
+<section id="reviews" class="wrap" style="overflow:hidden">
+  <p class="kicker reveal" style="text-align:center">endorsed by extremely serious people</p>
+  <h2 class="big display reveal" style="text-align:center">The most powerful <em>clipboards</em> in the world.<span style="color:var(--muted)">*</span></h2>
+  <div class="marquee reveal"><div class="track" id="track"></div></div>
+  <p class="disc reveal">* None of these people are real endorsements. It is a clipboard app. Please relax.</p>
+</section>
+
+<!-- CTA -->
+<section id="install" class="wrap cta">
+  <div class="box reveal">
+    <img class="hambig" src="icon.png" alt="Prosciutto" />
+    <h2>Copy something.<br>You've earned it.</h2>
+    <div class="install">
+      <div class="cmd"><span class="pmt">$</span><code>brew install --cask amirchuosho/prosciutto/prosciutto</code><button class="copy" onclick="copyCmd(this)">Copy</button></div>
+      <a class="btn" href="https://github.com/amirchuosho/prosciutto">★ Star on GitHub</a>
     </div>
-    <div class="reveal mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-3" id="theme-grid"></div>
-  </section>
+  </div>
+</section>
 
-  <!-- Features -->
-  <section id="features" class="mx-auto max-w-6xl px-5 py-20">
-    <div class="reveal text-center">
-      <h2 class="text-4xl font-extrabold sm:text-5xl">Small app. <span class="ham-text">Big appetite.</span></h2>
-    </div>
-    <div class="reveal mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3" id="feature-grid"></div>
-  </section>
+<footer>
+  <div class="wrap">
+    <span class="brand" style="display:flex;align-items:center;gap:9px"><img src="icon.png" alt="" style="width:22px;height:22px;border-radius:6px"> Prosciutto · MIT · made with questionable priorities</span>
+    <span style="display:flex;gap:20px"><a href="https://github.com/amirchuosho/prosciutto">GitHub</a><a href="https://prosciutto.io">prosciutto.io</a></span>
+  </div>
+</footer>
 
-  <!-- Reviews -->
-  <section id="reviews" class="mx-auto max-w-6xl px-5 py-20">
-    <div class="reveal text-center">
-      <h2 class="text-4xl font-extrabold sm:text-5xl">Endorsed by the most powerful<br class="hidden sm:block" /> <span class="ham-text">clipboards</span> in the world.<span class="align-super text-xl text-white/40">*</span></h2>
-    </div>
-    <div class="reveal mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3" id="review-grid"></div>
-    <p class="reveal mt-8 text-center text-sm text-white/40">
-      * None of these people are real, and none of them are endorsing anything. It is a clipboard app. Please relax.
-    </p>
-  </section>
+<script>
+const THEMES = [
+  ['prosciutto','Prosciutto','#FF70A3','#FF4566'], ['synthwave','Synthwave','#FF3CAC','#7A2FF7'],
+  ['matrix','Matrix','#39FF14','#00C853'], ['dracula','Dracula','#BD93F9','#FF79C6'],
+  ['nord','Nord','#88C0D0','#5E81AC'], ['vaporwave','Vaporwave','#FF6AD5','#8C6AFF'],
+  ['cyberpunk','Cyberpunk','#FCEE0A','#00F0FF'], ['gruvbox','Gruvbox','#FE8019','#D65D0E'],
+  ['daylight','Daylight','#FF4566','#FF70A3'],
+];
+const pills = document.getElementById('pills');
+pills.innerHTML = THEMES.map(([id,name,a,b]) =>
+  `<button class="pill" role="button" aria-pressed="${id==='prosciutto'}" data-t="${id}">
+     <span class="sw" style="background:linear-gradient(135deg,${a},${b})"></span>${name}</button>`).join('');
+pills.addEventListener('click', e => {
+  const p = e.target.closest('.pill'); if(!p) return;
+  document.body.setAttribute('data-theme', p.dataset.t);
+  document.querySelectorAll('.pill').forEach(x => x.setAttribute('aria-pressed', x===p));
+  document.querySelector('meta[name=theme-color]').setAttribute('content',
+    getComputedStyle(document.body).getPropertyValue('--bg').trim());
+});
 
-  <!-- Install CTA -->
-  <section id="install" class="mx-auto max-w-3xl px-5 py-24 text-center">
-    <div class="rounded-3xl border border-white/10 glass p-10 card-shadow">
-      <img src="icon.png" alt="Prosciutto" class="mx-auto h-16 w-16 rounded-2xl" />
-      <h2 class="mt-4 text-3xl font-extrabold sm:text-4xl">Copy something. <span class="ham-text">You've earned it.</span></h2>
-      <p class="mt-3 text-white/70">One command. No account, no telemetry, no catch. Just a very good clipboard.</p>
-      <div class="mx-auto mt-6 flex max-w-lg items-center gap-3 rounded-xl border border-white/10 bg-black/40 px-4 py-3 font-mono text-sm">
-        <span class="text-ham">$</span>
-        <code class="flex-1 truncate text-left">brew install --cask amirchuosho/prosciutto/prosciutto</code>
-        <button onclick="copyInstall()" class="shrink-0 rounded-md bg-white/10 px-2.5 py-1 text-xs font-semibold hover:bg-white/20 transition">Copy</button>
-      </div>
-      <div class="mt-5 flex flex-wrap justify-center gap-3">
-        <a href="https://github.com/amirchuosho/prosciutto" class="rounded-full bg-gradient-to-r from-ham to-ham-deep px-6 py-2.5 font-semibold hover:brightness-110 transition">★ Star on GitHub</a>
-        <a href="https://github.com/amirchuosho/prosciutto#install" class="rounded-full border border-white/15 px-6 py-2.5 font-semibold hover:bg-white/5 transition">How it works ↗</a>
-      </div>
-    </div>
-  </section>
+// world-leader marquee (duplicated for seamless loop)
+const REV = [
+  ['obama','🎤','Barack Obama','44th U.S. President','I have signed treaties with less ceremony than pasting used to require. Now it\'s ⌘⇧V and done. Yes we copy.'],
+  ['elizabeth','👑','Queen Elizabeth II','Monarch, United Kingdom','One is delighted. One now pastes with grace, and one\'s corgis approve.'],
+  ['musk','🚀','Elon Musk','Rockets, mostly','I tried to acquire it. It was already free. Deeply confusing. Ten out of ten.'],
+  ['kim','❄️','Kim Jong-un','Supreme Leader, DPRK','My clipboard history is now better organised than my five-year plan.'],
+  ['ardern','🐑','Jacinda Ardern','Former PM, New Zealand','Faster than a sheepdog. Higher praise I simply cannot give.'],
+  ['merkel','🗿','Angela Merkel','Former Chancellor, Germany','I do not smile. But my clipboard does now. Sehr effizient. Approved.'],
+];
+const card = ([s,e,n,t,q]) =>
+  `<figure class="quote"><p>&ldquo;${q}&rdquo;</p><div class="who">
+   <span class="av">${e}<img src="img/${s}.jpg" alt="${n}" onerror="this.remove()" loading="lazy"></span>
+   <span><b>${n}</b><span>${t}</span></span></div></figure>`;
+document.getElementById('track').innerHTML = (REV.concat(REV)).map(card).join('');
 
-  <!-- Footer -->
-  <footer class="border-t border-white/5">
-    <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-5 py-8 text-sm text-white/50 sm:flex-row">
-      <div class="flex items-center gap-2"><img src="icon.png" alt="" class="h-5 w-5 rounded" /> Prosciutto · MIT licensed · made with questionable priorities</div>
-      <div class="flex gap-5">
-        <a href="https://github.com/amirchuosho/prosciutto" class="hover:text-white transition">GitHub</a>
-        <a href="https://prosciutto.io" class="hover:text-white transition">prosciutto.io</a>
-      </div>
-    </div>
-  </footer>
+// copy
+function copyCmd(btn){
+  navigator.clipboard.writeText('brew install --cask amirchuosho/prosciutto/prosciutto');
+  const t=btn.textContent; btn.textContent='Copied ✓'; setTimeout(()=>btn.textContent=t,1400);
+}
 
-  <script>
-    // Copy install command
-    function copyInstall() {
-      navigator.clipboard.writeText('brew install --cask amirchuosho/prosciutto/prosciutto');
-      const b = document.getElementById('copy-btn');
-      if (b) { const t = b.textContent; b.textContent = 'Copied ✓'; setTimeout(() => b.textContent = t, 1400); }
-    }
+// hero staggered load
+document.querySelectorAll('.hero .reveal').forEach(el=>{
+  const d = (+el.dataset.d||0)*90 + 80;
+  setTimeout(()=>el.classList.add('in'), d);
+});
+// scroll reveals (content is visible by default via .in fallback if JS/observer misses)
+const io=new IntersectionObserver((es)=>es.forEach(x=>{if(x.isIntersecting){x.target.classList.add('in');io.unobserve(x.target)}}),{threshold:.12});
+document.querySelectorAll('section .reveal, .cta .reveal').forEach(el=>io.observe(el));
 
-    // Auto-browse: move the selection ring across the hero preview cards, like
-    // arrow-navigating the real gallery. Pauses when the tab is hidden.
-    (function () {
-      const cards = Array.from(document.querySelectorAll('#preview-strip .preview-card'));
-      if (!cards.length || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-      let i = 1;
-      cards[i].classList.add('sel');
-      setInterval(() => {
-        if (document.hidden) return;
-        cards.forEach(c => c.classList.remove('sel'));
-        i = (i + 1) % cards.length;
-        cards[i].classList.add('sel');
-      }, 1400);
-    })();
-
-    // Themes (name, bg, surface, accent, 3 type colors)
-    const themes = [
-      ['Prosciutto', 'radial-gradient(120% 100% at 50% 120%, #2a1622, #141018)', '#1E1B24', ['#FF70A3','#FF4566'], ['#5C8FFF','#52CC85','#C77DFF']],
-      ['Synthwave', 'linear-gradient(180deg,#1a1033,#2a1550,#3d1a4d)', '#241640', ['#FF3CAC','#7A2FF7'], ['#00E5FF','#39FF9E','#FFB03C']],
-      ['Matrix', 'radial-gradient(120% 100% at 50% 0,#06120a,#030603)', '#0B140B', ['#39FF14','#00C853'], ['#39FF14','#00E676','#A6FF00']],
-      ['Dracula', '#282A36', '#343746', ['#BD93F9','#FF79C6'], ['#8BE9FD','#50FA7B','#FF79C6']],
-      ['Nord', '#2E3440', '#3B4252', ['#88C0D0','#5E81AC'], ['#81A1C1','#A3BE8C','#B48EAD']],
-      ['Vaporwave', 'linear-gradient(135deg,#2a1b3d,#3a2352,#1b3a4a)', '#2E2246', ['#FF6AD5','#8C6AFF'], ['#8CF0E8','#C6A6FF','#FFB8E0']],
-      ['Cyberpunk', '#0A0A0F', '#13131C', ['#FCEE0A','#00F0FF'], ['#00F0FF','#00FF9F','#FF003C']],
-      ['Gruvbox', '#282828', '#32302F', ['#FE8019','#D65D0E'], ['#83A598','#B8BB26','#D3869B']],
-      ['Daylight', 'linear-gradient(180deg,#F6F3F7,#EDE9F1)', '#FFFFFF', ['#FF70A3','#FF4566'], ['#4C82F5','#2FB765','#A55CE0']],
-    ];
-    document.getElementById('theme-grid').innerHTML = themes.map(([name,bg,surface,accent,types]) => `
-      <div class="overflow-hidden rounded-2xl border border-white/10" style="background:${bg}">
-        <div class="p-4">
-          <div class="flex gap-2 mb-3">
-            ${types.map((c,i)=>`<div class="flex-1 rounded-lg overflow-hidden shadow-lg" style="background:${surface}">
-              <div style="height:14px;background:${c}"></div>
-              <div style="height:26px"></div></div>`).join('')}
-          </div>
-          <div class="flex items-center justify-between">
-            <span class="font-bold" style="color:${surface==='#FFFFFF'?'#2A2530':'#fff'}">${name}</span>
-            <span class="h-4 w-4 rounded-full" style="background:linear-gradient(135deg,${accent[0]},${accent[1]})"></span>
-          </div>
-        </div>
-      </div>`).join('');
-
-    // Features
-    const features = [
-      ['🧠','Remembers everything','Every copy — text, links, code, images, files, colors, even map locations — captured automatically and searchable.'],
-      ['⚡','Paste in one keystroke','Hit ⌘⇧V, arrow to the clip, press ⏎. Or ⌘1–9 for your pinned favorites. Gone before you blink.'],
-      ['🎨','9 unhinged themes','Full palettes, not accent swatches. Synthwave, Matrix, Dracula, Cyberpunk… pick a personality.'],
-      ['🔎','Fuzzy search','Start typing. It finds that thing you copied three days ago. Yes, that one.'],
-      ['📌','Pin & organize','Pin the clips you reach for. Sort into color-coded sections. Drag to file them.'],
-      ['🔒','Private by heart','Everything stays on your Mac. No cloud, no account, no telemetry, no you-are-the-product.'],
-    ];
-    document.getElementById('feature-grid').innerHTML = features.map(([e,t,d]) => `
-      <div class="rounded-2xl border border-white/10 bg-white/[.03] p-6 hover:bg-white/[.06] transition">
-        <div class="text-3xl">${e}</div>
-        <h3 class="mt-3 text-lg font-bold">${t}</h3>
-        <p class="mt-2 text-sm text-white/60">${d}</p>
-      </div>`).join('');
-
-    // Reviews — [photo slug, emoji fallback, name, title, quote]. Drop headshots
-    // into web/img/<slug>.jpg; the emoji shows until the photo is present.
-    const reviews = [
-      ['obama','🎤','Barack Obama','44th U.S. President','I have signed treaties with less ceremony than pasting used to require. Now it\'s ⌘⇧V and done. Yes we copy.'],
-      ['elizabeth','👑','Queen Elizabeth II','Monarch, United Kingdom','One is delighted. One now pastes with grace — and one\'s corgis approve.'],
-      ['musk','🚀','Elon Musk','Rockets, mostly','I tried to acquire it. It was already free. Deeply confusing. Ten out of ten.'],
-      ['kim','❄️','Kim Jong-un','Supreme Leader, DPRK','My clipboard history is now better organized than my five-year plan.'],
-      ['ardern','🐑','Jacinda Ardern','Former PM, New Zealand','Faster than a sheepdog. Higher praise I simply cannot give.'],
-      ['merkel','🗿','Angela Merkel','Former Chancellor, Germany','I do not smile. But my clipboard does now. Sehr effizient. Approved.'],
-    ];
-    document.getElementById('review-grid').innerHTML = reviews.map(([slug,e,n,t,q]) => `
-      <figure class="rounded-2xl border border-white/10 bg-white/[.03] p-6">
-        <blockquote class="text-white/85">"${q}"</blockquote>
-        <figcaption class="mt-4 flex items-center gap-3">
-          <span class="relative grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-ham to-ham-deep text-lg ring-2 ring-white/10">
-            <span>${e}</span>
-            <img src="img/${slug}.jpg" alt="${n}" class="absolute inset-0 h-full w-full object-cover" onerror="this.remove()" loading="lazy" />
-          </span>
-          <span>
-            <span class="block text-sm font-bold text-white/85">${n}</span>
-            <span class="block text-xs text-white/45">${t}</span>
-          </span>
-        </figcaption>
-      </figure>`).join('');
-
-    // Scroll reveal
-    const io = new IntersectionObserver((es) => es.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); }), { threshold: .12 });
-    document.querySelectorAll('.reveal').forEach(el => io.observe(el));
-  </script>
+// auto-browse the hero tiles like arrow-nav
+(function(){
+  const tiles=[...document.querySelectorAll('#strip .tile')];
+  if(!tiles.length||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  let i=1; tiles[i].classList.add('sel');
+  setInterval(()=>{ if(document.hidden)return; tiles.forEach(t=>t.classList.remove('sel')); i=(i+1)%tiles.length; tiles[i].classList.add('sel'); },1500);
+})();
+</script>
 </body>
 </html>
