@@ -246,6 +246,7 @@ struct GalleryView: View {
                                  isSelected: idx == model.selection,
                                  accent: theme.accent,
                                  accentGradient: theme.accentGradient,
+                                 palette: theme.palette,
                                  section: sectionTag(for: item),
                                  onPin: { Task { await model.togglePin(item) } },
                                  onDelete: { Task { await model.delete(item) } },

@@ -11,6 +11,7 @@ struct ClipCard: View {
     var isSelected: Bool = false
     var accent: Color = .accentColor
     var accentGradient: LinearGradient = LinearGradient(colors: [.accentColor], startPoint: .top, endPoint: .bottom)
+    var palette: ThemePalette = ThemePalette(AppTheme.prosciutto.spec(customAccentHex: "#F56B8C"))
     /// The section this card is filed in, shown as a tag. Type stays the header colour.
     var section: (name: String, color: Color)? = nil
     var onPin: () -> Void = {}
@@ -33,7 +34,7 @@ struct ClipCard: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var style: KindStyle { KindStyle.of(item.kind) }
-    private var bandColor: Color { style.color }                 // type colour, always
+    private var bandColor: Color { palette.color(for: item.kind) }
     private var onBand: Color { bandColor.readableText }
     private var titleLine: String { item.title ?? style.title }
     private var showActions: Bool { hovering }
@@ -51,17 +52,17 @@ struct ClipCard: View {
             header
             bodyContent
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                .background(DS.cardBody(scheme))
+                .background(palette.surface)
                 .clipped()
                 .overlay(alignment: .bottomTrailing) { if showActions && !editingBody { actionBar } }
             footer
         }
         .frame(width: DS.CardSize.width, height: DS.CardSize.height)
-        .background(DS.cardBody(scheme))
+        .background(palette.surface)
         .clipShape(RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
-                .strokeBorder(isSelected ? AnyShapeStyle(accentGradient) : AnyShapeStyle(DS.cardStroke(scheme)),
+                .strokeBorder(isSelected ? AnyShapeStyle(accentGradient) : AnyShapeStyle(palette.hairline),
                               lineWidth: isSelected ? 3 : 1)
         )
         .shadow(color: isSelected ? accent.opacity(0.5) : .black.opacity(scheme == .dark ? 0.4 : 0.12),
@@ -190,7 +191,7 @@ struct ClipCard: View {
     private var footer: some View {
         ZStack {
             HStack(spacing: DS.Space.sm) {
-                Text(meta).font(DS.Font.meta).foregroundStyle(DS.footerMeta(scheme))
+                Text(meta).font(DS.Font.meta).foregroundStyle(palette.secondary)
                     .lineLimit(1).truncationMode(.middle)
                 Spacer(minLength: 0)
                 if index != nil { slotChip }          // only pinned cards have a slot
@@ -201,7 +202,7 @@ struct ClipCard: View {
         }
         .padding(.horizontal, DS.Space.md)
         .padding(.vertical, DS.Space.sm)
-        .overlay(alignment: .top) { Rectangle().fill(DS.hairline(scheme)).frame(height: 1) }
+        .overlay(alignment: .top) { Rectangle().fill(palette.hairline).frame(height: 1) }
     }
 
     /// The slot bubble (only on pinned cards). Shows the card's ⌘-number; tap to
@@ -212,7 +213,7 @@ struct ClipCard: View {
         } label: {
             Text(index.map(String.init) ?? "")
                 .font(DS.Font.shortcut)
-                .foregroundStyle(isSelected ? accent : DS.footerMeta(scheme))
+                .foregroundStyle(isSelected ? accent : palette.secondary)
                 .frame(width: 18, height: 18)
                 .background(Circle().fill(isSelected ? accent.opacity(0.18)
                                                      : Color.primary.opacity(0.08)))
@@ -429,6 +430,8 @@ extension ClipCard: Equatable {
         lhs.item.isPinned == rhs.item.isPinned &&
         lhs.item.pinOrder == rhs.item.pinOrder &&
         lhs.item.sectionID == rhs.item.sectionID &&
-        lhs.item.lastUsedAt == rhs.item.lastUsedAt
+        lhs.item.lastUsedAt == rhs.item.lastUsedAt &&
+        lhs.palette.surface == rhs.palette.surface &&
+        lhs.palette.color(for: lhs.item.kind) == rhs.palette.color(for: rhs.item.kind)
     }
 }
