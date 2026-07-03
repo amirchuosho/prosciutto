@@ -20,14 +20,23 @@ Free. Open source. Zero dollars, no sign-up, no nonsense.
 
 ---
 
-Prosciutto remembers **everything** you copy and dresses it up in a fast, beautiful gallery. Hit a
-global hotkey and a horizontal strip of colour-coded cards slides up from the bottom of your screen.
-Scroll, search, pin, and paste in a single keystroke — without ever leaving the app you're in.
+## Hey 👋
+
+You copy things all day — a link here, a snippet there, that one command you always forget.
+macOS remembers exactly one of them. Prosciutto remembers **all** of them.
+
+Tap a hotkey and your clipboard history slides up from the bottom of the screen as a row of
+big, colourful cards — text, links, code, images, colours, files, even map locations, each with
+its own look. Arrow to the one you want, hit return, and it's pasted right back into whatever you
+were doing. That's the whole idea. It's fast, it's pretty, and it stays out of your way.
+
+It's **free**, **open source**, lives entirely **on your Mac**, and installs with one Homebrew
+command. No account, no subscription, no catch.
 
 > "I've signed treaties with less ceremony than pasting used to require. Now it's ⌘⇧V and done."
-> — a definitely-real world leader, on our [landing page](https://prosciutto.io) 😉
+> — a definitely-real world leader, over on [prosciutto.io](https://prosciutto.io) 😉
 
-## Features
+## What it does
 
 - 🎴 **Visual card gallery** — big cards with a coloured type header, source-app icon, and rich previews (images, links, colour swatches, code, files)
 - 🌈 **Type colour-coding** — text, link, image, colour, code, file each have their own colour; sections show as a separate tag so colour never means two things

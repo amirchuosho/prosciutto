@@ -1,0 +1,3 @@
+# Every change requires review from the repo owner.
+# With branch protection ("require review from Code Owners"), no PR merges without @amirchuosho.
+*       @amirchuosho

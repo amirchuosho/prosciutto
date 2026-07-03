@@ -17,7 +17,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍖</text></svg>" />
+  <link rel="icon" href="icon.png" />
+  <link rel="apple-touch-icon" href="icon.png" />
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -41,6 +42,9 @@
     .card-shadow { box-shadow: 0 20px 60px -20px rgba(255,69,102,.35); }
     @keyframes float { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-10px) } }
     .float { animation: float 6s ease-in-out infinite; }
+    /* Auto-browsing selection ring on the hero preview cards */
+    .preview-card.sel { outline: 3px solid #FF4566; outline-offset: 0; transform: translateY(-6px) scale(1.05); box-shadow: 0 16px 40px -12px rgba(255,69,102,.55); z-index: 5; }
+    @media (prefers-reduced-motion: reduce) { .float { animation: none } .preview-card { transition: none !important } }
     .reveal { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
     .reveal.in { opacity: 1; transform: none; }
     ::selection { background: #FF4566; color: white; }
@@ -52,7 +56,7 @@
   <header class="sticky top-0 z-50 glass border-b border-white/5">
     <nav class="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
       <a href="#" class="flex items-center gap-2 font-extrabold text-lg">
-        <span class="text-2xl">🍖</span> Prosciutto
+        <img src="icon.png" alt="Prosciutto" class="h-7 w-7 rounded-lg" /> Prosciutto
       </a>
       <div class="flex items-center gap-3 text-sm">
         <a href="#themes" class="hidden sm:inline text-white/70 hover:text-white transition">Themes</a>
@@ -84,9 +88,9 @@
         <code id="install-cmd" class="flex-1 truncate text-left text-white/90">brew install --cask amirchuosho/prosciutto/prosciutto</code>
         <button onclick="copyInstall()" class="shrink-0 rounded-md bg-white/10 px-2.5 py-1 text-xs font-semibold hover:bg-white/20 transition" id="copy-btn">Copy</button>
       </div>
-      <a href="https://github.com/amirchuosho/prosciutto/releases" class="w-full sm:w-auto shrink-0 rounded-xl bg-gradient-to-r from-ham to-ham-deep px-6 py-3 text-center font-semibold card-shadow hover:brightness-110 transition">Download ↓</a>
+      <a href="https://github.com/amirchuosho/prosciutto" class="w-full sm:w-auto shrink-0 rounded-xl bg-gradient-to-r from-ham to-ham-deep px-6 py-3 text-center font-semibold card-shadow hover:brightness-110 transition">★ Star on GitHub</a>
     </div>
-    <p class="mt-3 text-xs text-white/40">No $99. No account. The cask even un-quarantines itself. You're welcome.</p>
+    <p class="mt-3 text-xs text-white/40">Installs via Homebrew. No account, no sign-up — the cask even clears macOS Gatekeeper for you. You're welcome.</p>
 
     <!-- Hero gallery mock -->
     <div class="float mt-14">
@@ -97,22 +101,35 @@
           <span class="h-3 w-3 rounded-full bg-green-400/80"></span>
           <span class="ml-3 text-xs text-white/40">Prosciutto — ⌘⇧V</span>
         </div>
-        <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div class="overflow-hidden rounded-xl bg-surface ring-1 ring-white/5">
-            <div class="bg-[#5C8FFF] px-3 py-2 text-xs font-bold">≣ Text</div>
+        <div class="grid grid-cols-2 gap-3 sm:grid-cols-5" id="preview-strip">
+          <div class="preview-card overflow-hidden rounded-xl bg-surface ring-1 ring-white/10 transition-all duration-300">
+            <div class="bg-[#5C8FFF] px-3 py-2 text-xs font-bold text-white">≣ Text</div>
             <div class="p-3 text-left text-[11px] text-white/70">psql postgres</div>
           </div>
-          <div class="overflow-hidden rounded-xl bg-surface ring-2 ring-ham card-shadow">
-            <div class="bg-[#52CC85] px-3 py-2 text-xs font-bold">‹› Code</div>
+          <div class="preview-card overflow-hidden rounded-xl bg-surface ring-1 ring-white/10 transition-all duration-300">
+            <div class="bg-[#52CC85] px-3 py-2 text-xs font-bold text-black/80">‹› Code</div>
             <div class="p-3 text-left font-mono text-[11px] text-white/70">SELECT * FROM users;</div>
           </div>
-          <div class="overflow-hidden rounded-xl bg-surface ring-1 ring-white/5">
-            <div class="bg-[#C77DFF] px-3 py-2 text-xs font-bold">🔗 Link</div>
+          <div class="preview-card overflow-hidden rounded-xl bg-surface ring-1 ring-white/10 transition-all duration-300">
+            <div class="bg-[#C77DFF] px-3 py-2 text-xs font-bold text-black/80">🔗 Link</div>
             <div class="p-3 text-left text-[11px] text-white/70">prosciutto.io</div>
           </div>
-          <div class="overflow-hidden rounded-xl bg-surface ring-1 ring-white/5">
-            <div class="bg-[#FF9E5C] px-3 py-2 text-xs font-bold">▣ Image</div>
-            <div class="h-[52px] bg-gradient-to-br from-pink-300/60 to-orange-300/60"></div>
+          <div class="preview-card overflow-hidden rounded-xl bg-surface ring-1 ring-white/10 transition-all duration-300">
+            <div class="bg-[#FF6FB0] px-3 py-2 text-xs font-bold text-black/80">🎨 Color</div>
+            <div class="p-3 text-left">
+              <div class="flex items-center gap-2">
+                <span class="h-6 w-6 rounded-md ring-1 ring-white/20" style="background:#7C5CFF"></span>
+                <code class="font-mono text-[11px] text-white/80">#7C5CFF</code>
+                <span class="ml-auto grid h-5 w-5 place-items-center rounded-full text-[9px]" style="background:conic-gradient(red,orange,yellow,lime,cyan,blue,magenta,red)">🎯</span>
+              </div>
+            </div>
+          </div>
+          <div class="preview-card overflow-hidden rounded-xl bg-surface ring-1 ring-white/10 transition-all duration-300">
+            <div class="bg-[#FF9E5C] px-3 py-2 text-xs font-bold text-black/80">▣ Image</div>
+            <div class="relative h-[52px]">
+              <div class="absolute inset-0 bg-gradient-to-br from-fuchsia-400/70 via-orange-300/60 to-sky-400/70"></div>
+              <div class="absolute inset-0 grid place-items-center text-white/90 text-lg drop-shadow">🖼️</div>
+            </div>
           </div>
         </div>
       </div>
@@ -150,9 +167,9 @@
   <!-- Install CTA -->
   <section id="install" class="mx-auto max-w-3xl px-5 py-24 text-center">
     <div class="rounded-3xl border border-white/10 glass p-10 card-shadow">
-      <div class="text-5xl">🍖</div>
+      <img src="icon.png" alt="Prosciutto" class="mx-auto h-16 w-16 rounded-2xl" />
       <h2 class="mt-4 text-3xl font-extrabold sm:text-4xl">Copy something. <span class="ham-text">You've earned it.</span></h2>
-      <p class="mt-3 text-white/70">One command. No account, no $99, no telemetry. Just a very good clipboard.</p>
+      <p class="mt-3 text-white/70">One command. No account, no telemetry, no catch. Just a very good clipboard.</p>
       <div class="mx-auto mt-6 flex max-w-lg items-center gap-3 rounded-xl border border-white/10 bg-black/40 px-4 py-3 font-mono text-sm">
         <span class="text-ham">$</span>
         <code class="flex-1 truncate text-left">brew install --cask amirchuosho/prosciutto/prosciutto</code>
@@ -160,7 +177,7 @@
       </div>
       <div class="mt-5 flex flex-wrap justify-center gap-3">
         <a href="https://github.com/amirchuosho/prosciutto" class="rounded-full bg-gradient-to-r from-ham to-ham-deep px-6 py-2.5 font-semibold hover:brightness-110 transition">★ Star on GitHub</a>
-        <a href="https://github.com/amirchuosho/prosciutto/releases" class="rounded-full border border-white/15 px-6 py-2.5 font-semibold hover:bg-white/5 transition">Download .dmg</a>
+        <a href="https://github.com/amirchuosho/prosciutto#install" class="rounded-full border border-white/15 px-6 py-2.5 font-semibold hover:bg-white/5 transition">How it works ↗</a>
       </div>
     </div>
   </section>
@@ -168,7 +185,7 @@
   <!-- Footer -->
   <footer class="border-t border-white/5">
     <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-5 py-8 text-sm text-white/50 sm:flex-row">
-      <div class="flex items-center gap-2"><span class="text-lg">🍖</span> Prosciutto · MIT licensed · made with questionable priorities</div>
+      <div class="flex items-center gap-2"><img src="icon.png" alt="" class="h-5 w-5 rounded" /> Prosciutto · MIT licensed · made with questionable priorities</div>
       <div class="flex gap-5">
         <a href="https://github.com/amirchuosho/prosciutto" class="hover:text-white transition">GitHub</a>
         <a href="https://prosciutto.io" class="hover:text-white transition">prosciutto.io</a>
@@ -183,6 +200,21 @@
       const b = document.getElementById('copy-btn');
       if (b) { const t = b.textContent; b.textContent = 'Copied ✓'; setTimeout(() => b.textContent = t, 1400); }
     }
+
+    // Auto-browse: move the selection ring across the hero preview cards, like
+    // arrow-navigating the real gallery. Pauses when the tab is hidden.
+    (function () {
+      const cards = Array.from(document.querySelectorAll('#preview-strip .preview-card'));
+      if (!cards.length || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      let i = 1;
+      cards[i].classList.add('sel');
+      setInterval(() => {
+        if (document.hidden) return;
+        cards.forEach(c => c.classList.remove('sel'));
+        i = (i + 1) % cards.length;
+        cards[i].classList.add('sel');
+      }, 1400);
+    })();
 
     // Themes (name, bg, surface, accent, 3 type colors)
     const themes = [
