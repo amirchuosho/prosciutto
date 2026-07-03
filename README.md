@@ -4,9 +4,12 @@
 
 # Prosciutto
 
-**A visual, open-source clipboard manager for macOS.**
+**The clipboard manager for macOS that's actually delicious.** 🍖
 
-Your clipboard history as a fast, beautiful, colour-coded gallery.
+Your clipboard history as a fast, beautiful, colour-coded gallery — in 9 gloriously unhinged themes.
+Free. Open source. Zero dollars, no sign-up, no nonsense.
+
+[🌐 prosciutto.io](https://prosciutto.io) · [⬇ Install](#install) · [🎨 Themes](#themes)
 
 [![Platform](https://img.shields.io/badge/platform-macOS%2014%2B-1c1c20)](https://www.apple.com/macos/)
 [![Swift](https://img.shields.io/badge/Swift-5.10-F05138?logo=swift&logoColor=white)](https://swift.org)
@@ -17,9 +20,12 @@ Your clipboard history as a fast, beautiful, colour-coded gallery.
 
 ---
 
-Prosciutto keeps a rich, visual history of everything you copy. Hit a global hotkey and a
-horizontal gallery of cards slides up from the bottom of your screen, colour-coded by type.
-Scroll, search, pin, and paste, without ever leaving the app you're in.
+Prosciutto remembers **everything** you copy and dresses it up in a fast, beautiful gallery. Hit a
+global hotkey and a horizontal strip of colour-coded cards slides up from the bottom of your screen.
+Scroll, search, pin, and paste in a single keystroke — without ever leaving the app you're in.
+
+> "I've signed treaties with less ceremony than pasting used to require. Now it's ⌘⇧V and done."
+> — a definitely-real world leader, on our [landing page](https://prosciutto.io) 😉
 
 ## Features
 
@@ -30,10 +36,24 @@ Scroll, search, pin, and paste, without ever leaving the app you're in.
 - 🏷️ **Name any clip** — click a card's title to rename it in place; titles are searchable (name a password "Instagram", find it by "instagram")
 - ✏️ **Inline edit** — edit content right in the card, no modal; code clips get a monospaced editor with one-click **JSON formatting**
 - 🔎 **Search & filter** — live search across titles and content, filter by type
-- 🎨 **Themes** — System / Dark / Light (Light is a warm cream), accent themes (Prosciutto, Midnight, Forest, Mono) + custom colour, with a bold gradient selection
+- 🎨 **9 full named themes** — not accent swatches; each is a whole world (background + card surfaces + per-type colours + accent). Pick a personality, or roll your own with a **Custom** accent (see [Themes](#themes) below)
 - 🔁 **Two paste modes** — paste automatically on select, or "load" the item so your next `⌘V` pastes it
 - 🔔 **Optional copy sound**
 - 🔒 **Privacy-first** — honours `org.nspasteboard.Concealed`/`Transient` markers and a password-manager blocklist; everything is stored locally, no telemetry
+
+## Themes
+
+Nine self-contained themes — each restyles the background, card surfaces, per-type colours **and**
+accent, so switching feels like a whole new app. Pick your vibe in **Settings → Theme**:
+
+| | | |
+|---|---|---|
+| 🍖 **Prosciutto** — the house ham-pink | 🌆 **Synthwave** — 80s neon sunset | 🟩 **Matrix** — phosphor terminal |
+| 🧛 **Dracula** — dev-famous purple | 🧊 **Nord** — arctic & calm | 🌸 **Vaporwave** — pastel dream |
+| ⚡ **Cyberpunk** — neon high-contrast | 🟫 **Gruvbox** — warm retro | ☀️ **Daylight** — clean & bright |
+
+…plus **Custom**, which themes a neutral base with any accent colour you like. All static — no
+animated backgrounds — so scrolling stays buttery.
 
 ### Roadmap
 

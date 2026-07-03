@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prosciutto — the clipboard manager for macOS that's actually delicious</title>
+  <meta name="description" content="A free, open-source, ridiculously good-looking clipboard manager for macOS. 9 unhinged themes, quick-paste, search, and zero dollars. brew install and go." />
+  <meta name="theme-color" content="#141018" />
+
+  <!-- Open Graph / social -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Prosciutto — a delicious clipboard manager for macOS" />
+  <meta property="og:description" content="Free, open-source, gorgeous. 9 unhinged themes. brew install --cask amirchuosho/prosciutto/prosciutto" />
+  <meta property="og:url" content="https://prosciutto.io" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍖</text></svg>" />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Outfit', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
+          colors: {
+            ink: '#0E0C12',
+            surface: '#1E1B24',
+            ham: { DEFAULT: '#FF70A3', deep: '#FF4566' },
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    body { background: radial-gradient(120% 90% at 50% -10%, #241326 0%, #0E0C12 55%); }
+    .ham-text { background: linear-gradient(120deg, #FF70A3, #FF4566); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .glass { background: rgba(30,27,36,.55); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+    .card-shadow { box-shadow: 0 20px 60px -20px rgba(255,69,102,.35); }
+    @keyframes float { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-10px) } }
+    .float { animation: float 6s ease-in-out infinite; }
+    .reveal { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
+    .reveal.in { opacity: 1; transform: none; }
+    ::selection { background: #FF4566; color: white; }
+  </style>
+</head>
+<body class="font-sans text-white/90 antialiased selection:bg-ham-deep">
+
+  <!-- Nav -->
+  <header class="sticky top-0 z-50 glass border-b border-white/5">
+    <nav class="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
+      <a href="#" class="flex items-center gap-2 font-extrabold text-lg">
+        <span class="text-2xl">🍖</span> Prosciutto
+      </a>
+      <div class="flex items-center gap-3 text-sm">
+        <a href="#themes" class="hidden sm:inline text-white/70 hover:text-white transition">Themes</a>
+        <a href="#features" class="hidden sm:inline text-white/70 hover:text-white transition">Features</a>
+        <a href="#reviews" class="hidden sm:inline text-white/70 hover:text-white transition">Reviews</a>
+        <a href="https://github.com/amirchuosho/prosciutto" class="text-white/70 hover:text-white transition">GitHub ↗</a>
+        <a href="#install" class="rounded-full bg-gradient-to-r from-ham to-ham-deep px-4 py-2 font-semibold text-white card-shadow hover:brightness-110 transition">Install</a>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Hero -->
+  <section class="mx-auto max-w-6xl px-5 pt-16 pb-10 sm:pt-24 text-center">
+    <div class="mb-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium text-white/70">
+      <span class="h-2 w-2 rounded-full bg-green-400"></span> Free forever · Open source · macOS 14+
+    </div>
+    <h1 class="mx-auto max-w-4xl text-5xl font-extrabold leading-[1.05] sm:text-7xl">
+      The clipboard manager that's<br class="hidden sm:block" /> <span class="ham-text">actually delicious.</span>
+    </h1>
+    <p class="mx-auto mt-6 max-w-2xl text-lg text-white/70">
+      Prosciutto remembers everything you copy, dresses it up in 9 gloriously unhinged themes,
+      and pastes it back in a single keystroke. Native. Fast. Zero dollars. No sign-up. No nonsense.
+    </p>
+
+    <!-- Install one-liner -->
+    <div class="mx-auto mt-8 flex max-w-xl flex-col items-center gap-3 sm:flex-row sm:justify-center">
+      <div class="flex w-full items-center gap-3 rounded-xl border border-white/10 bg-black/40 px-4 py-3 font-mono text-sm">
+        <span class="text-ham">$</span>
+        <code id="install-cmd" class="flex-1 truncate text-left text-white/90">brew install --cask amirchuosho/prosciutto/prosciutto</code>
+        <button onclick="copyInstall()" class="shrink-0 rounded-md bg-white/10 px-2.5 py-1 text-xs font-semibold hover:bg-white/20 transition" id="copy-btn">Copy</button>
+      </div>
+      <a href="https://github.com/amirchuosho/prosciutto/releases" class="w-full sm:w-auto shrink-0 rounded-xl bg-gradient-to-r from-ham to-ham-deep px-6 py-3 text-center font-semibold card-shadow hover:brightness-110 transition">Download ↓</a>
+    </div>
+    <p class="mt-3 text-xs text-white/40">No $99. No account. The cask even un-quarantines itself. You're welcome.</p>
+
+    <!-- Hero gallery mock -->
+    <div class="float mt-14">
+      <div class="mx-auto max-w-4xl rounded-2xl border border-white/10 glass p-4 card-shadow">
+        <div class="mb-3 flex items-center gap-2 px-1">
+          <span class="h-3 w-3 rounded-full bg-red-400/80"></span>
+          <span class="h-3 w-3 rounded-full bg-yellow-400/80"></span>
+          <span class="h-3 w-3 rounded-full bg-green-400/80"></span>
+          <span class="ml-3 text-xs text-white/40">Prosciutto — ⌘⇧V</span>
+        </div>
+        <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div class="overflow-hidden rounded-xl bg-surface ring-1 ring-white/5">
+            <div class="bg-[#5C8FFF] px-3 py-2 text-xs font-bold">≣ Text</div>
+            <div class="p-3 text-left text-[11px] text-white/70">psql postgres</div>
+          </div>
+          <div class="overflow-hidden rounded-xl bg-surface ring-2 ring-ham card-shadow">
+            <div class="bg-[#52CC85] px-3 py-2 text-xs font-bold">‹› Code</div>
+            <div class="p-3 text-left font-mono text-[11px] text-white/70">SELECT * FROM users;</div>
+          </div>
+          <div class="overflow-hidden rounded-xl bg-surface ring-1 ring-white/5">
+            <div class="bg-[#C77DFF] px-3 py-2 text-xs font-bold">🔗 Link</div>
+            <div class="p-3 text-left text-[11px] text-white/70">prosciutto.io</div>
+          </div>
+          <div class="overflow-hidden rounded-xl bg-surface ring-1 ring-white/5">
+            <div class="bg-[#FF9E5C] px-3 py-2 text-xs font-bold">▣ Image</div>
+            <div class="h-[52px] bg-gradient-to-br from-pink-300/60 to-orange-300/60"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Themes -->
+  <section id="themes" class="mx-auto max-w-6xl px-5 py-20">
+    <div class="reveal text-center">
+      <h2 class="text-4xl font-extrabold sm:text-5xl">Dress it up. Or down. <span class="ham-text">Or unhinged.</span></h2>
+      <p class="mx-auto mt-4 max-w-2xl text-white/70">Nine full themes — background, card surfaces, per-type colors, accent — not just a boring accent swatch. Pick a whole vibe.</p>
+    </div>
+    <div class="reveal mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-3" id="theme-grid"></div>
+  </section>
+
+  <!-- Features -->
+  <section id="features" class="mx-auto max-w-6xl px-5 py-20">
+    <div class="reveal text-center">
+      <h2 class="text-4xl font-extrabold sm:text-5xl">Small app. <span class="ham-text">Big appetite.</span></h2>
+    </div>
+    <div class="reveal mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3" id="feature-grid"></div>
+  </section>
+
+  <!-- Reviews -->
+  <section id="reviews" class="mx-auto max-w-6xl px-5 py-20">
+    <div class="reveal text-center">
+      <h2 class="text-4xl font-extrabold sm:text-5xl">Endorsed by the most powerful<br class="hidden sm:block" /> <span class="ham-text">clipboards</span> in the world.<span class="align-super text-xl text-white/40">*</span></h2>
+    </div>
+    <div class="reveal mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3" id="review-grid"></div>
+    <p class="reveal mt-8 text-center text-sm text-white/40">
+      * None of these people are real, and none of them are endorsing anything. It is a clipboard app. Please relax.
+    </p>
+  </section>
+
+  <!-- Install CTA -->
+  <section id="install" class="mx-auto max-w-3xl px-5 py-24 text-center">
+    <div class="rounded-3xl border border-white/10 glass p-10 card-shadow">
+      <div class="text-5xl">🍖</div>
+      <h2 class="mt-4 text-3xl font-extrabold sm:text-4xl">Copy something. <span class="ham-text">You've earned it.</span></h2>
+      <p class="mt-3 text-white/70">One command. No account, no $99, no telemetry. Just a very good clipboard.</p>
+      <div class="mx-auto mt-6 flex max-w-lg items-center gap-3 rounded-xl border border-white/10 bg-black/40 px-4 py-3 font-mono text-sm">
+        <span class="text-ham">$</span>
+        <code class="flex-1 truncate text-left">brew install --cask amirchuosho/prosciutto/prosciutto</code>
+        <button onclick="copyInstall()" class="shrink-0 rounded-md bg-white/10 px-2.5 py-1 text-xs font-semibold hover:bg-white/20 transition">Copy</button>
+      </div>
+      <div class="mt-5 flex flex-wrap justify-center gap-3">
+        <a href="https://github.com/amirchuosho/prosciutto" class="rounded-full bg-gradient-to-r from-ham to-ham-deep px-6 py-2.5 font-semibold hover:brightness-110 transition">★ Star on GitHub</a>
+        <a href="https://github.com/amirchuosho/prosciutto/releases" class="rounded-full border border-white/15 px-6 py-2.5 font-semibold hover:bg-white/5 transition">Download .dmg</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="border-t border-white/5">
+    <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-5 py-8 text-sm text-white/50 sm:flex-row">
+      <div class="flex items-center gap-2"><span class="text-lg">🍖</span> Prosciutto · MIT licensed · made with questionable priorities</div>
+      <div class="flex gap-5">
+        <a href="https://github.com/amirchuosho/prosciutto" class="hover:text-white transition">GitHub</a>
+        <a href="https://prosciutto.io" class="hover:text-white transition">prosciutto.io</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Copy install command
+    function copyInstall() {
+      navigator.clipboard.writeText('brew install --cask amirchuosho/prosciutto/prosciutto');
+      const b = document.getElementById('copy-btn');
+      if (b) { const t = b.textContent; b.textContent = 'Copied ✓'; setTimeout(() => b.textContent = t, 1400); }
+    }
+
+    // Themes (name, bg, surface, accent, 3 type colors)
+    const themes = [
+      ['Prosciutto', 'radial-gradient(120% 100% at 50% 120%, #2a1622, #141018)', '#1E1B24', ['#FF70A3','#FF4566'], ['#5C8FFF','#52CC85','#C77DFF']],
+      ['Synthwave', 'linear-gradient(180deg,#1a1033,#2a1550,#3d1a4d)', '#241640', ['#FF3CAC','#7A2FF7'], ['#00E5FF','#39FF9E','#FFB03C']],
+      ['Matrix', 'radial-gradient(120% 100% at 50% 0,#06120a,#030603)', '#0B140B', ['#39FF14','#00C853'], ['#39FF14','#00E676','#A6FF00']],
+      ['Dracula', '#282A36', '#343746', ['#BD93F9','#FF79C6'], ['#8BE9FD','#50FA7B','#FF79C6']],
+      ['Nord', '#2E3440', '#3B4252', ['#88C0D0','#5E81AC'], ['#81A1C1','#A3BE8C','#B48EAD']],
+      ['Vaporwave', 'linear-gradient(135deg,#2a1b3d,#3a2352,#1b3a4a)', '#2E2246', ['#FF6AD5','#8C6AFF'], ['#8CF0E8','#C6A6FF','#FFB8E0']],
+      ['Cyberpunk', '#0A0A0F', '#13131C', ['#FCEE0A','#00F0FF'], ['#00F0FF','#00FF9F','#FF003C']],
+      ['Gruvbox', '#282828', '#32302F', ['#FE8019','#D65D0E'], ['#83A598','#B8BB26','#D3869B']],
+      ['Daylight', 'linear-gradient(180deg,#F6F3F7,#EDE9F1)', '#FFFFFF', ['#FF70A3','#FF4566'], ['#4C82F5','#2FB765','#A55CE0']],
+    ];
+    document.getElementById('theme-grid').innerHTML = themes.map(([name,bg,surface,accent,types]) => `
+      <div class="overflow-hidden rounded-2xl border border-white/10" style="background:${bg}">
+        <div class="p-4">
+          <div class="flex gap-2 mb-3">
+            ${types.map((c,i)=>`<div class="flex-1 rounded-lg overflow-hidden shadow-lg" style="background:${surface}">
+              <div style="height:14px;background:${c}"></div>
+              <div style="height:26px"></div></div>`).join('')}
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="font-bold" style="color:${surface==='#FFFFFF'?'#2A2530':'#fff'}">${name}</span>
+            <span class="h-4 w-4 rounded-full" style="background:linear-gradient(135deg,${accent[0]},${accent[1]})"></span>
+          </div>
+        </div>
+      </div>`).join('');
+
+    // Features
+    const features = [
+      ['🧠','Remembers everything','Every copy — text, links, code, images, files, colors, even map locations — captured automatically and searchable.'],
+      ['⚡','Paste in one keystroke','Hit ⌘⇧V, arrow to the clip, press ⏎. Or ⌘1–9 for your pinned favorites. Gone before you blink.'],
+      ['🎨','9 unhinged themes','Full palettes, not accent swatches. Synthwave, Matrix, Dracula, Cyberpunk… pick a personality.'],
+      ['🔎','Fuzzy search','Start typing. It finds that thing you copied three days ago. Yes, that one.'],
+      ['📌','Pin & organize','Pin the clips you reach for. Sort into color-coded sections. Drag to file them.'],
+      ['🔒','Private by heart','Everything stays on your Mac. No cloud, no account, no telemetry, no you-are-the-product.'],
+    ];
+    document.getElementById('feature-grid').innerHTML = features.map(([e,t,d]) => `
+      <div class="rounded-2xl border border-white/10 bg-white/[.03] p-6 hover:bg-white/[.06] transition">
+        <div class="text-3xl">${e}</div>
+        <h3 class="mt-3 text-lg font-bold">${t}</h3>
+        <p class="mt-2 text-sm text-white/60">${d}</p>
+      </div>`).join('');
+
+    // Reviews — [photo slug, emoji fallback, name, title, quote]. Drop headshots
+    // into web/img/<slug>.jpg; the emoji shows until the photo is present.
+    const reviews = [
+      ['obama','🎤','Barack Obama','44th U.S. President','I have signed treaties with less ceremony than pasting used to require. Now it\'s ⌘⇧V and done. Yes we copy.'],
+      ['elizabeth','👑','Queen Elizabeth II','Monarch, United Kingdom','One is delighted. One now pastes with grace — and one\'s corgis approve.'],
+      ['musk','🚀','Elon Musk','Rockets, mostly','I tried to acquire it. It was already free. Deeply confusing. Ten out of ten.'],
+      ['kim','❄️','Kim Jong-un','Supreme Leader, DPRK','My clipboard history is now better organized than my five-year plan.'],
+      ['ardern','🐑','Jacinda Ardern','Former PM, New Zealand','Faster than a sheepdog. Higher praise I simply cannot give.'],
+      ['merkel','🗿','Angela Merkel','Former Chancellor, Germany','I do not smile. But my clipboard does now. Sehr effizient. Approved.'],
+    ];
+    document.getElementById('review-grid').innerHTML = reviews.map(([slug,e,n,t,q]) => `
+      <figure class="rounded-2xl border border-white/10 bg-white/[.03] p-6">
+        <blockquote class="text-white/85">"${q}"</blockquote>
+        <figcaption class="mt-4 flex items-center gap-3">
+          <span class="relative grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-ham to-ham-deep text-lg ring-2 ring-white/10">
+            <span>${e}</span>
+            <img src="img/${slug}.jpg" alt="${n}" class="absolute inset-0 h-full w-full object-cover" onerror="this.remove()" loading="lazy" />
+          </span>
+          <span>
+            <span class="block text-sm font-bold text-white/85">${n}</span>
+            <span class="block text-xs text-white/45">${t}</span>
+          </span>
+        </figcaption>
+      </figure>`).join('');
+
+    // Scroll reveal
+    const io = new IntersectionObserver((es) => es.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); }), { threshold: .12 });
+    document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+  </script>
+</body>
+</html>
