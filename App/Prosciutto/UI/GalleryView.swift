@@ -263,6 +263,11 @@ struct GalleryView: View {
                 .padding(.horizontal, DS.Space.lg).padding(.vertical, DS.Space.lg)
                 .animation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.82),
                            value: model.items)
+                // Rebuild the strip when the theme changes so cards render directly
+                // in the new palette. Without this, a card that was hidden during the
+                // switch keeps its old-theme render, and the next isSelected change
+                // animates the colour delta — the tile visibly morphs old→new theme.
+                .id(theme.theme)
             }
             .scrollClipDisabled()
             .frame(height: DS.CardSize.height + 2 * DS.Space.lg)
