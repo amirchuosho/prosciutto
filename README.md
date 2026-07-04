@@ -16,22 +16,27 @@ Free. Open source. Zero dollars, no sign-up, no nonsense.
 [![License](https://img.shields.io/badge/license-MIT-2ea44f)](LICENSE)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-FF66AE)](#contributing)
 
+<br>
+
+<img src="docs/theme-prosciutto.png" width="820" alt="The Prosciutto gallery: text, code, link, colour and image cards in a horizontal strip" />
+
+<sub>The gallery, mid-summon. It comes in nine themes — [try them live at prosciutto.io](https://prosciutto.io).</sub>
+
 </div>
 
 ---
 
 ## Hey 👋
 
-You copy things all day — a link here, a snippet there, that one command you always forget.
-macOS remembers exactly one of them. Prosciutto remembers **all** of them.
+You copy things all day — a link, a snippet, that one command you always forget. macOS remembers
+exactly one of them. Prosciutto remembers **all** of them.
 
-Tap a hotkey and your clipboard history slides up from the bottom of the screen as a row of
-big, colourful cards — text, links, code, images, colours, files, even map locations, each with
-its own look. Arrow to the one you want, hit return, and it's pasted right back into whatever you
-were doing. That's the whole idea. It's fast, it's pretty, and it stays out of your way.
+Tap a hotkey and your history slides up as a row of big, colourful cards — text, links, code,
+images, colours, files, map locations, each with its own look. Arrow to the one you want, hit
+return, it's pasted back into whatever you were doing. Fast, pretty, out of your way.
 
-It's **free**, **open source**, lives entirely **on your Mac**, and installs with one Homebrew
-command. No account, no subscription, no catch.
+**Free**, **open source**, lives entirely **on your Mac**, one Homebrew command. No account, no
+subscription, no catch.
 
 > "I've signed treaties with less ceremony than pasting used to require. Now it's ⌘⇧V and done."
 > — a definitely-real world leader, over on [prosciutto.io](https://prosciutto.io) 😉
@@ -56,13 +61,16 @@ Nine self-contained themes — each restyles the background, card surfaces, per-
 accent, so switching feels like a whole new app. Pick your vibe in **Settings → Theme**:
 
 | | | |
-|---|---|---|
-| 🍖 **Prosciutto** — the house ham-pink | 🌆 **Synthwave** — 80s neon sunset | 🟩 **Matrix** — phosphor terminal |
+|:--:|:--:|:--:|
+| <img src="docs/theme-prosciutto.png" alt="Prosciutto theme" /> | <img src="docs/theme-synthwave.png" alt="Synthwave theme" /> | <img src="docs/theme-matrix.png" alt="Matrix theme" /> |
+| 🍖 **Prosciutto** — house ham-pink | 🌆 **Synthwave** — 80s neon sunset | 🟩 **Matrix** — phosphor terminal |
+| <img src="docs/theme-dracula.png" alt="Dracula theme" /> | <img src="docs/theme-nord.png" alt="Nord theme" /> | <img src="docs/theme-vaporwave.png" alt="Vaporwave theme" /> |
 | 🧛 **Dracula** — dev-famous purple | 🧊 **Nord** — arctic & calm | 🌸 **Vaporwave** — pastel dream |
+| <img src="docs/theme-cyberpunk.png" alt="Cyberpunk theme" /> | <img src="docs/theme-gruvbox.png" alt="Gruvbox theme" /> | <img src="docs/theme-daylight.png" alt="Daylight theme" /> |
 | ⚡ **Cyberpunk** — neon high-contrast | 🟫 **Gruvbox** — warm retro | ☀️ **Daylight** — clean & bright |
 
 …plus **Custom**, which themes a neutral base with any accent colour you like. All static — no
-animated backgrounds — so scrolling stays buttery.
+animated backgrounds — so scrolling stays buttery. [See them switch live →](https://prosciutto.io)
 
 ### Roadmap
 
