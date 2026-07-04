@@ -107,17 +107,26 @@ nav .wrap{display:flex; align-items:center; justify-content:space-between; heigh
 .js .hero .reveal[data-d="4"]{animation-delay:.31s}
 .js .hero .reveal[data-d="5"]{animation-delay:.39s}
 
-/* ---- real gallery screenshot (theme-reactive: src swaps with the page theme) ---- */
-.stage{margin:clamp(60px,8vw,104px) auto 0; max-width:1080px; perspective:1700px}
-.shot{display:block; width:100%; height:auto; transform:rotateX(9deg); transform-origin:center top;
-  transition:transform .6s cubic-bezier(.22,1,.36,1), filter .5s ease;
-  filter:drop-shadow(0 46px 70px rgba(0,0,0,.55));
-  /* the crop cuts mid-strip on both sides; feather the hard edges so it reads as an endless row */
-  -webkit-mask:linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
-          mask:linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent)}
-.stage:hover .shot{transform:rotateX(3deg)}
-/* brief cross-dissolve while the swapped image decodes */
-.shot.swapping{filter:drop-shadow(0 46px 70px rgba(0,0,0,.55)) opacity(.35)}
+/* ---- gallery mock (theme-reactive via CSS vars; auto-browses like arrow-nav) ---- */
+.stage{margin:clamp(60px,8vw,104px) auto 0; max-width:940px; perspective:1400px}
+.panel{border-radius:24px; border:1px solid var(--line); padding:16px;
+  background:color-mix(in oklab,var(--surface) 70%, transparent); box-shadow:var(--shadow);
+  transform:rotateX(9deg); transform-style:preserve-3d; transition:transform .6s ease}
+.stage:hover .panel{transform:rotateX(3deg)}
+.panel .bar{display:flex; align-items:center; gap:7px; padding:2px 4px 12px}
+.panel .bar i{width:11px;height:11px;border-radius:50%;display:inline-block}
+.panel .bar b{margin-left:10px; font-size:12px; color:var(--muted); font-weight:600; font-family:var(--font-b)}
+.strip{display:grid; grid-template-columns:repeat(5,1fr); gap:12px}
+@media(max-width:640px){.strip{grid-template-columns:repeat(2,1fr)}}
+.tile{border-radius:14px; overflow:hidden; background:var(--surface); border:1px solid var(--line);
+  transition:transform .35s cubic-bezier(.22,1,.36,1), box-shadow .35s, outline-color .2s; outline:3px solid transparent}
+.tile .head{padding:8px 11px; font-family:var(--font-b); font-weight:700; font-size:11.5px; color:#0d0d12}
+.tile .body{padding:11px; font-size:11px; color:var(--muted); min-height:52px}
+.tile.sel{outline-color:var(--accent2); transform:translateY(-10px) scale(1.06); box-shadow:0 20px 44px -14px color-mix(in oklab,var(--accent) 60%,transparent); z-index:2}
+.swatch{width:26px;height:26px;border-radius:7px;border:1px solid var(--line)}
+.thumb{height:52px;background:
+   conic-gradient(from 210deg, var(--c-image), var(--c-color), var(--c-link), var(--c-text), var(--c-image));
+   display:grid;place-items:center;font-size:17px}
 
 /* ---- section frame ---- */
 section{padding:clamp(60px,8vw,104px) 0; position:relative}
@@ -219,12 +228,19 @@ footer .brand{font-size:16px; color:var(--ink)} footer a:hover{color:var(--ink)}
     <div class="cmd"><span class="pmt">$</span><code id="cmd">brew install --cask amirchuosho/prosciutto/prosciutto</code><button class="copy" onclick="copyCmd(this)">Copy</button></div>
     <a class="btn ghost" href="https://github.com/amirchuosho/prosciutto">★ Star on GitHub</a>
   </div>
-  <p class="subtle reveal" data-d="4">One command. No account, no sign-up. The cask even clears macOS Gatekeeper for you.</p>
+  <p class="subtle reveal" data-d="4">One command. No account, no sign-up.</p>
 
   <div class="stage reveal" data-d="5">
-    <img class="shot" id="shot" src="img/gallery-prosciutto.png" width="1760" height="452"
-      fetchpriority="high" decoding="async"
-      alt="The Prosciutto gallery: text, colour, link and code cards laid out in a horizontal strip, skinned in the current theme" />
+    <div class="panel">
+      <div class="bar"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i><b>Prosciutto · ⌘⇧V</b></div>
+      <div class="strip" id="strip">
+        <div class="tile"><div class="head" style="background:var(--c-text)">≣ Text</div><div class="body mono">psql postgres</div></div>
+        <div class="tile"><div class="head" style="background:var(--c-code)">‹› Code</div><div class="body mono">SELECT * FROM users;</div></div>
+        <div class="tile"><div class="head" style="background:var(--c-link)">🔗 Link</div><div class="body">prosciutto.io</div></div>
+        <div class="tile"><div class="head" style="background:var(--c-color)">🎨 Color</div><div class="body"><div style="display:flex;gap:8px;align-items:center"><span class="swatch" style="background:#7C5CFF"></span><span class="mono">#7C5CFF</span></div></div></div>
+        <div class="tile"><div class="head" style="background:var(--c-image)">▣ Image</div><div class="thumb">🖼️</div></div>
+      </div>
+    </div>
   </div>
 </header>
 
@@ -306,25 +322,12 @@ const pills = document.getElementById('pills');
 pills.innerHTML = THEMES.map(([id,name,a,b]) =>
   `<button class="pill" role="button" aria-pressed="${id==='prosciutto'}" data-t="${id}">
      <span class="sw" style="background:linear-gradient(135deg,${a},${b})"></span>${name}</button>`).join('');
-const shot = document.getElementById('shot');
-function setTheme(id){
-  document.body.setAttribute('data-theme', id);
-  document.querySelectorAll('.pill').forEach(x => x.setAttribute('aria-pressed', x.dataset.t===id));
-  document.querySelector('meta[name=theme-color]').setAttribute('content',
-    getComputedStyle(document.body).getPropertyValue('--bg').trim());
-  // swap the hero screenshot to match; dissolve while the new image decodes
-  const next = 'img/gallery-'+id+'.png';
-  if(shot && !shot.src.endsWith(next)){
-    const img = new Image();
-    shot.classList.add('swapping');
-    img.onload = ()=>{ shot.src = next; shot.classList.remove('swapping'); };
-    img.onerror = ()=> shot.classList.remove('swapping');   // keep current shot if one is missing
-    img.src = next;
-  }
-}
 pills.addEventListener('click', e => {
   const p = e.target.closest('.pill'); if(!p) return;
-  setTheme(p.dataset.t);
+  document.body.setAttribute('data-theme', p.dataset.t);
+  document.querySelectorAll('.pill').forEach(x => x.setAttribute('aria-pressed', x===p));
+  document.querySelector('meta[name=theme-color]').setAttribute('content',
+    getComputedStyle(document.body).getPropertyValue('--bg').trim());
 });
 
 // world-leader marquee (duplicated for seamless loop)
@@ -353,10 +356,13 @@ function copyCmd(btn){
 const io=new IntersectionObserver((es)=>es.forEach(x=>{if(x.isIntersecting){x.target.classList.add('in');io.unobserve(x.target)}}),{threshold:.12, rootMargin:'0px 0px -8% 0px'});
 document.querySelectorAll('section .reveal, .cta .reveal').forEach(el=>io.observe(el));
 
-// warm the other theme screenshots after load so switching is instant (no flash)
-addEventListener('load', ()=> setTimeout(()=>{
-  THEMES.forEach(([id])=>{ if(id!=='prosciutto'){ const i=new Image(); i.src='img/gallery-'+id+'.png'; } });
-}, 900));
+// auto-browse the hero tiles like arrow-nav
+(function(){
+  const tiles=[...document.querySelectorAll('#strip .tile')];
+  if(!tiles.length||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  let i=1; tiles[i].classList.add('sel');
+  setInterval(()=>{ if(document.hidden)return; tiles.forEach(t=>t.classList.remove('sel')); i=(i+1)%tiles.length; tiles[i].classList.add('sel'); },1500);
+})();
 </script>
 </body>
 </html>
