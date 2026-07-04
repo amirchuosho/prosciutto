@@ -36,7 +36,9 @@ final class AppEnvironment: ObservableObject {
         }
         self.panel = panel
 
-        panel.onResign = { [weak self] in self?.hideGallery() }
+        // Click-away / app-switch dismissal: DON'T restore focus — the app the user
+        // switched to is already frontmost, and yanking it back would shove it behind.
+        panel.onResign = { [weak self] in self?.hideGallery(restoreFocus: false) }
         vm.onDismiss = { [weak self] in self?.hideGallery() }
         vm.onPaste = { [weak self] item, plain in
             guard let self else { return }
@@ -119,8 +121,8 @@ final class AppEnvironment: ObservableObject {
         }
     }
 
-    func hideGallery() {
-        panel.hide()
+    func hideGallery(restoreFocus: Bool = true) {
+        panel.hide(restoreFocus: restoreFocus)
     }
 
     /// Intercept navigation keys before the focused search field swallows them.

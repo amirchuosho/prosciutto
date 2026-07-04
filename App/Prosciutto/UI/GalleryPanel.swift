@@ -93,13 +93,21 @@ final class GalleryPanel: NSObject {
 
     /// Slide down off the bottom edge, then hide and return focus to the prior app.
     /// `completion` runs after the panel is fully hidden and focus restored.
-    func hide(completion: (() -> Void)? = nil) {
+    /// - Parameter restoreFocus: whether to re-activate the app that was frontmost
+    ///   when the gallery opened. TRUE for deliberate dismissals while Prosciutto is
+    ///   active (paste needs the target app front; Escape / close returns you there).
+    ///   FALSE when the gallery is dismissed *because* the user switched to another
+    ///   app — that app is now frontmost, and re-activating previousApp would yank
+    ///   focus off it (e.g. opening Finder while the gallery is up shoved Finder
+    ///   behind). Making this explicit avoids racing the resign notification against
+    ///   `NSApp.isActive`.
+    func hide(restoreFocus: Bool = true, completion: (() -> Void)? = nil) {
         guard panel.isVisible else { completion?(); return }
         let finish: () -> Void = { [weak self] in
             guard let self else { return }
             self.panel.orderOut(nil)
             self.panel.alphaValue = 1
-            self.previousApp?.activate()
+            if restoreFocus { self.previousApp?.activate() }
             completion?()
         }
         if reduceMotion { finish(); return }
