@@ -12,3 +12,6 @@ dist/
 
 # Brainstorm visual-companion sessions
 .superpowers/
+
+# Local planning/spec notes (superpowers)
+docs/superpowers/
