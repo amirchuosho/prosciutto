@@ -37,6 +37,12 @@ struct ImageCard: View {
                     Image(nsImage: img)
                         .resizable()
                         .scaledToFill()
+                        // scaledToFill overflows the frame; .clipped() only clips the
+                        // pixels, NOT hit-testing, so the oversized image intercepted
+                        // taps/drags over neighbouring tiles (pasted/dragged the wrong
+                        // card). The image is pure decoration — take it out of hit-
+                        // testing so only the frame-sized Color.clear is hittable.
+                        .allowsHitTesting(false)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .clipped()

@@ -22,12 +22,9 @@ struct ClipCard: View {
     var onAssignSlot: (Int) -> Void = { _ in }
     var onEditingChanged: (Bool) -> Void = { _ in }
     var onEditImage: () -> Void = {}
-    /// Driven by a single shared hovered-id on the strip, not per-card @State: this
-    /// makes "last card entered wins", so a dropped mouse-exit can't leave the action
-    /// bar stuck on the wrong card. See onHoverChange.
+    /// Whether the pointer is over this card. Computed centrally by the strip from
+    /// the cursor position (see GalleryView), so hover can't miss enter/exit events.
     var isHovered: Bool = false
-    /// Report hover in/out. The strip records the hovered id centrally.
-    var onHoverChange: (Bool) -> Void = { _ in }
 
     @State private var pickingSlot = false
     @State private var editingTitle = false
@@ -66,6 +63,9 @@ struct ClipCard: View {
         .frame(width: DS.CardSize.width, height: DS.CardSize.height)
         .background(palette.surface)
         .clipShape(RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous))
+        // Bound the card's tap/drag hit area to its own frame, so nothing inside
+        // (e.g. an image) can extend the hittable region over a neighbouring tile.
+        .contentShape(RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
                 .strokeBorder(isSelected ? AnyShapeStyle(accentGradient) : AnyShapeStyle(palette.hairline),
@@ -76,17 +76,11 @@ struct ClipCard: View {
         .scaleEffect(isSelected ? 1.04 : 1.0)
         .animation(reduceMotion ? nil : .spring(response: 0.26, dampingFraction: 0.8), value: isSelected)
         .animation(reduceMotion ? nil : .easeOut(duration: 0.14), value: isHovered)
-        // onContinuousHover fires on every mouse-move INSIDE the card, so a missed
-        // mouseEntered (common in a dense LazyHStack) self-corrects on the next move
-        // — unlike onHover, which only fires on the boundary crossing and drops the
-        // action bar when moving fast between adjacent cards.
-        .onContinuousHover { phase in
-            switch phase {
-            case .active: onHoverChange(true)
-            case .ended:
-                onHoverChange(false)
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.78)) { pickingSlot = false }
-            }
+        // Hover is tracked centrally by the strip (GalleryView) via cursor position,
+        // not per-card — a single tracking area can't miss enter/exit events or fight
+        // a re-render feedback loop the way per-card .onHover/.onContinuousHover did.
+        .onChange(of: isHovered) { _, h in
+            if !h { withAnimation(.spring(response: 0.3, dampingFraction: 0.78)) { pickingSlot = false } }
         }
     }
 
@@ -186,8 +180,19 @@ struct ClipCard: View {
         .background(Capsule().fill(s.color))
     }
 
+    /// A file-backed image (screenshot / edited / Finder image) has no meaningful
+    /// copied-from app — the poller just recorded whatever happened to be frontmost,
+    /// which often resolves to a blank/generic icon. These are image files, so show
+    /// Preview's icon (the app that opens them) instead.
+    private var fileBackedImage: Bool { item.kind == .image && item.imageData == nil }
+
+    private var headerIcon: NSImage? {
+        if fileBackedImage { return AppIconProvider.icon(forBundleID: "com.apple.Preview") }
+        return AppIconProvider.icon(forBundleID: item.sourceAppBundleID)
+    }
+
     @ViewBuilder private var appIcon: some View {
-        if let icon = AppIconProvider.icon(forBundleID: item.sourceAppBundleID) {
+        if let icon = headerIcon {
             Image(nsImage: icon)
                 .resizable()
                 .frame(width: DS.CardSize.appIcon, height: DS.CardSize.appIcon)
@@ -225,16 +230,20 @@ struct ClipCard: View {
         Button {
             withAnimation(.spring(response: 0.34, dampingFraction: 0.7)) { pickingSlot = true }
         } label: {
-            Text(index.map(String.init) ?? "")
-                .font(DS.Font.shortcut)
-                .foregroundStyle(isSelected ? accent : palette.secondary)
-                .frame(width: 18, height: 18)
-                .background(Circle().fill(isSelected ? accent.opacity(0.18)
-                                                     : Color.primary.opacity(0.08)))
-                .contentShape(Circle())
+            // Show the actual keystroke — ⌘N — not a bare number, so it's obvious the
+            // tile is pasteable with that shortcut while the gallery is open.
+            HStack(spacing: 0) {
+                Image(systemName: "command").font(.system(size: 8, weight: .heavy))
+                Text(index.map(String.init) ?? "").font(DS.Font.shortcut)
+            }
+            .foregroundStyle(accent)
+            .padding(.horizontal, 6).frame(height: 18)
+            .background(Capsule().fill(accent.opacity(0.16)))
+            .overlay(Capsule().strokeBorder(accent.opacity(0.45), lineWidth: 1))
+            .contentShape(Capsule())
         }
         .buttonStyle(.plain)
-        .help("Move to a different ⌘-slot")
+        .help("Paste with ⌘\(index.map(String.init) ?? "") · click to change slot")
     }
 
     /// Circles 1…n (n = pinned count) fly out across the footer with a staggered

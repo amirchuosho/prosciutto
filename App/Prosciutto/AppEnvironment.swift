@@ -1,5 +1,6 @@
 import SwiftUI
 import ProsciuttoKit
+import Carbon.HIToolbox
 
 @MainActor
 final class AppEnvironment: ObservableObject {
@@ -13,7 +14,7 @@ final class AppEnvironment: ObservableObject {
     let store = CoreDataClipStore()
     let paste = PasteService()
     let reader = SystemPasteboardReader()
-    let hotkey = HotkeyManager()
+    private let hotkeys = HotkeyCenter.shared
     let theme = ThemeManager()
     private let screenshotWatcher = ScreenshotWatcher()
     private let imageEditor = ImageEditService()
@@ -47,6 +48,9 @@ final class AppEnvironment: ObservableObject {
             guard let self else { return }
             self.paste.write(item, asPlainText: plain)       // always put it on the clipboard
             self.monitor.acknowledgeSelfWrite()               // ...but don't re-capture it as a dup
+            Task { await self.vm.recordUse(item) }            // bump recency: bring it to the front
+            self.deactivateSlotHotkeys()                      // gallery closing → release ⌘1–9
+
             let auto = Preferences.shared.pasteAutomatically
             // Hide first; only synthesize ⌘V AFTER the panel is gone and the
             // previous app is active, so the keystroke never lands in our search.
@@ -56,7 +60,7 @@ final class AppEnvironment: ObservableObject {
                 // system paste). Our synthesized ⌘V would then be caught by our
                 // own global hotkey and reopen the gallery instead of pasting.
                 // Drop the hotkey while we synthesize, then restore it.
-                self.hotkey.unregister()
+                self.hotkeys.unregister(id: HotkeyCenter.ID.open)
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.07) {
                     self.paste.synthesizePaste()
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
@@ -119,16 +123,36 @@ final class AppEnvironment: ObservableObject {
 
     func openGallery() {
         panel.show()                    // show instantly, no delay
+        activateSlotHotkeys()           // grab ⌘1–9 while open, before the front app can
         Task {
             vm.sectionFilter = .all     // always start on All, no leftover group
             vm.query.text = ""          // cleared search
             await vm.reload()
             vm.selectNewestUnpinned()   // land on the newest clip, not the last-paste spot
+            vm.homeScrollToken += 1     // reset the strip to the start (pins visible)
         }
     }
 
     func hideGallery(restoreFocus: Bool = true) {
+        deactivateSlotHotkeys()         // release ⌘1–9 back to the rest of the system
         panel.hide(restoreFocus: restoreFocus)
+    }
+
+    /// ⌘1–9 paste the pinned quick-slots, grabbed globally *only* while the gallery is
+    /// open so they beat the front app's own ⌘1–9 (tab switching) — then released so
+    /// they behave normally everywhere else.
+    private func activateSlotHotkeys() {
+        for n in 1...9 {
+            hotkeys.register(id: HotkeyCenter.ID.slot(n),
+                             keyCode: HotkeyCenter.digitKeyCodes[n - 1],
+                             modifiers: UInt32(cmdKey)) { [weak self] in
+                self?.vm.pasteIndex(n)
+            }
+        }
+    }
+
+    private func deactivateSlotHotkeys() {
+        for n in 1...9 { hotkeys.unregister(id: HotkeyCenter.ID.slot(n)) }
     }
 
     /// Intercept navigation keys before the focused search field swallows them.
@@ -147,12 +171,10 @@ final class AppEnvironment: ObservableObject {
                 self.vm.pasteSelected(asPlainText: true); return nil  // plain paste
             }
 
-            // ⌘ combinations
+            // ⌘ combinations. Note ⌘1–9 are NOT handled here: a non-activating panel
+            // never wins them from the front app's menu, so they're grabbed globally
+            // via HotkeyCenter while the gallery is open (see activateSlotHotkeys).
             if mods.contains(.command) {
-                if mods == .command, let s = event.charactersIgnoringModifiers,
-                   let n = Int(s), (1...9).contains(n) {
-                    self.vm.pasteIndex(n); return nil               // ⌘1–9 paste
-                }
                 if mods == .command, event.keyCode == 123 { self.vm.moveToStart(); return nil }  // ⌘← start
                 if mods == .command, event.keyCode == 124 { self.vm.moveToEnd(); return nil }     // ⌘→ end
                 if mods == .command, event.keyCode == 51 {                // ⌘⌫ delete
@@ -192,9 +214,11 @@ final class AppEnvironment: ObservableObject {
     func reloadHotkey() {
         let combo = KeyCombo(storedKeyCode: Preferences.shared.openHotkeyKeyCode,
                              storedModifiers: Preferences.shared.openHotkeyModifiers)
-        hotkey.unregister()
-        hotkey.onTrigger = { [weak self] in self?.toggleGallery() }
-        hotkey.register(keyCode: UInt32(combo.keyCode), modifiers: combo.carbonModifiers)
+        hotkeys.register(id: HotkeyCenter.ID.open,
+                         keyCode: UInt32(combo.keyCode),
+                         modifiers: combo.carbonModifiers) { [weak self] in
+            self?.toggleGallery()
+        }
     }
 
     func togglePause() {

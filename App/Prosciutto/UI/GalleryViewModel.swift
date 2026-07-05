@@ -12,6 +12,11 @@ final class GalleryViewModel: ObservableObject {
     @Published var sectionFilter: SectionFilter = .all
     @Published var query = ClipQuery()
     @Published var selection: Int = 0
+    /// Bumped each time the gallery (re)opens so the strip resets to the start —
+    /// keeps the pinned tiles visible on the left even after a previous session
+    /// scrolled far right. Kept separate from `selection` so navigating (which
+    /// follows the selection and must scroll among many pinned tiles) isn't affected.
+    @Published var homeScrollToken = 0
     /// True while a card title is being edited inline — the key monitor then
     /// leaves arrows/return/esc to the text field instead of navigating cards.
     @Published var isEditingTitle = false
@@ -109,6 +114,16 @@ final class GalleryViewModel: ObservableObject {
         onPaste(list[selection], asPlainText)
     }
 
+    /// Paste a specific clip (what the user clicked), by identity — never by the
+    /// positional selection index, which can point at a different clip if the list
+    /// reordered (e.g. the 0.3s poller captured something) between the card being
+    /// laid out and the tap landing. Also syncs `selection` so keyboard nav resumes
+    /// from the clicked card.
+    func paste(_ item: ClipItem, asPlainText: Bool = false) {
+        if let i = filtered().firstIndex(where: { $0.id == item.id }) { selection = i }
+        onPaste(item, asPlainText)
+    }
+
     /// Pinned cards in slot order. The slot a card occupies (its ⌘-number) is its
     /// rank here — stable across every section view, never a position in the
     /// current filter.
@@ -187,6 +202,18 @@ final class GalleryViewModel: ObservableObject {
         var updated = item
         updated.title = cleaned(title)
         try? await store.update(updated)
+        await reload()
+    }
+
+    /// Mark a clip as just used: bump its recency so it sorts to the front of the
+    /// unpinned clips (below pinned) on the next reload — a paste should bring the
+    /// tile back to the front, like re-copying it would. Pinned clips keep their
+    /// manual order, so this is a no-op for their position.
+    func recordUse(_ item: ClipItem) async {
+        var u = item
+        u.lastUsedAt = Date()
+        u.useCount += 1
+        try? await store.update(u)
         await reload()
     }
 

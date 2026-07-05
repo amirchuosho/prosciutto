@@ -14,8 +14,8 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.prosciutto.Prosciutto
-        MARKETING_VERSION: "0.2.0"
-        CURRENT_PROJECT_VERSION: "2"
+        MARKETING_VERSION: "0.2.1"
+        CURRENT_PROJECT_VERSION: "3"
         ENABLE_HARDENED_RUNTIME: YES
         SWIFT_VERSION: "5.10"
         GENERATE_INFOPLIST_FILE: YES

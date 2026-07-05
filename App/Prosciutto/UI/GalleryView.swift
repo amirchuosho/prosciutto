@@ -1,6 +1,15 @@
 import SwiftUI
 import ProsciuttoKit
 
+/// Each card reports its frame (in the strip's coordinate space) so the strip can
+/// tell which card the cursor is over from one central hover tracker.
+private struct CardFramesKey: PreferenceKey {
+    static var defaultValue: [UUID: CGRect] = [:]
+    static func reduce(value: inout [UUID: CGRect], nextValue: () -> [UUID: CGRect]) {
+        value.merge(nextValue(), uniquingKeysWith: { _, new in new })
+    }
+}
+
 struct GalleryView: View {
     @ObservedObject var model: GalleryViewModel
     @EnvironmentObject var theme: ThemeManager
@@ -10,9 +19,10 @@ struct GalleryView: View {
     @State private var showingAddSection = false
     @State private var newSectionName = ""
     @State private var dropPulse: UUID?
-    /// The single card currently under the pointer. Central so "last entered wins"
-    /// and a dropped mouse-exit can't leave the action bar stuck on the wrong card.
+    /// The single card currently under the pointer, computed from the cursor position
+    /// against each card's frame — one tracker, so it can't miss enter/exit events.
     @State private var hoveredID: UUID?
+    @State private var cardFrames: [UUID: CGRect] = [:]
 
     private let kinds: [ClipKind] = [.text, .link, .image, .color, .code, .file, .location]
 
@@ -254,19 +264,16 @@ struct GalleryView: View {
                                  onAssignSlot: { n in Task { await model.assignSlot(item, slot: n) } },
                                  onEditingChanged: { model.isEditingTitle = $0 },
                                  onEditImage: { model.editImage(item) },
-                                 isHovered: hoveredID == item.id,
-                                 onHoverChange: { active in
-                                    if active { hoveredID = item.id }
-                                    else if hoveredID == item.id { hoveredID = nil }
-                                 })
+                                 isHovered: hoveredID == item.id)
                             .equatable()
                             .id(item.id)
+                            .background(GeometryReader { g in
+                                Color.clear.preference(key: CardFramesKey.self,
+                                                       value: [item.id: g.frame(in: .named("galleryStrip"))])
+                            })
                             .transition(.scale(scale: 0.9).combined(with: .opacity))
                             .draggable(item.id.uuidString) { dragPreview(item) }
-                            .onTapGesture {
-                                model.selection = idx
-                                model.pasteSelected()
-                            }
+                            .onTapGesture { model.paste(item) }
                             .contextMenu { cardMenu(item) }
                     }
                 }
@@ -278,10 +285,32 @@ struct GalleryView: View {
                 // switch keeps its old-theme render, and the next isSelected change
                 // animates the colour delta — the tile visibly morphs old→new theme.
                 .id(theme.theme)
+                .coordinateSpace(name: "galleryStrip")
+                .onPreferenceChange(CardFramesKey.self) { cardFrames = $0 }
+                // ONE hover tracker for the whole strip, via an AppKit NSTrackingArea
+                // in a click-transparent overlay. SwiftUI's .onContinuousHover tears
+                // down and rebuilds its tracking area every time the strip re-renders
+                // (which happens on every hoveredID change), emitting a spurious .ended
+                // that cleared hover mid-move — the bar flickered and a click landing in
+                // that gap fell through to paste. An NSView's tracking area survives
+                // SwiftUI re-renders, so enter/move/exit are reported cleanly. The view
+                // sits in the scrolling content, so its local coords match cardFrames
+                // even when the strip is scrolled, and hitTest→nil lets clicks through.
+                .overlay(
+                    StripHoverTracker { pt in
+                        hoveredID = pt.flatMap { p in cardFrames.first { $0.value.contains(p) }?.key }
+                    }
+                )
             }
             .scrollClipDisabled()
             .frame(height: DS.CardSize.height + 2 * DS.Space.lg)
             .onChange(of: model.selection) { _, _ in scrollToSelection(proxy) }
+            // Declared AFTER the selection handler so, on open, the reset-to-start wins
+            // over the selection-follow scroll (both fire in the same update) — the
+            // gallery opens showing the pinned tiles from the left.
+            .onChange(of: model.homeScrollToken) { _, _ in
+                if let first = model.filtered().first { proxy.scrollTo(first.id, anchor: .leading) }
+            }
         }
     }
 
@@ -301,13 +330,14 @@ struct GalleryView: View {
     private func scrollToSelection(_ proxy: ScrollViewProxy) {
         let list = model.filtered()
         guard list.indices.contains(model.selection) else { return }
-        let id = list[model.selection].id
-        // Instant, keep-visible. Any *animated* scroll drops render-server frames
-        // compositing the rich moving strip at 120Hz (main thread is idle — it's
-        // GPU), which reads as a hiccup; instant has no motion to drop. anchor:nil
-        // (not .center) keeps it calm: moves the strip the minimum to keep the
-        // selected card visible, so navigating among visible cards doesn't jump it.
-        proxy.scrollTo(id, anchor: nil)
+        // Minimal keep-visible scroll that FOLLOWS the selection — for every card,
+        // pinned or not. (Pinned tiles are not one block: there can be up to 9, more
+        // than fit on screen, so arrow-navigating among them must scroll too.)
+        // anchor:nil moves the strip the minimum to keep the selected card visible, so
+        // navigating among already-visible cards doesn't jump. Instant (no
+        // withAnimation): an animated scroll of the rich strip drops render-server
+        // frames and reads as a hiccup; instant has no motion to drop.
+        proxy.scrollTo(list[model.selection].id, anchor: nil)
     }
 
     /// The section a card is filed in, as a (name, colour) tag. Type stays the
@@ -342,5 +372,44 @@ struct GalleryView: View {
         }
         .frame(height: DS.CardSize.height + 2 * DS.Space.lg)
         .frame(maxWidth: .infinity)
+    }
+}
+
+/// Reports the pointer location over the strip via an AppKit tracking area, which —
+/// unlike SwiftUI's .onContinuousHover — survives the strip's re-renders and so never
+/// emits a spurious exit. `onMove` gets the point in the view's own (flipped, top-left)
+/// coordinates, which match the cards' `.named("galleryStrip")` frames, or nil on exit.
+/// The view is invisible and transparent to clicks (`hitTest` returns nil), so it only
+/// observes movement and never intercepts taps meant for the cards or action buttons.
+private struct StripHoverTracker: NSViewRepresentable {
+    let onMove: (CGPoint?) -> Void
+
+    func makeNSView(context: Context) -> TrackerNSView {
+        let v = TrackerNSView(); v.onMove = onMove; return v
+    }
+    func updateNSView(_ view: TrackerNSView, context: Context) { view.onMove = onMove }
+
+    final class TrackerNSView: NSView {
+        var onMove: ((CGPoint?) -> Void)?
+
+        override var isFlipped: Bool { true }   // top-left origin, matches SwiftUI frames
+        override func hitTest(_ point: NSPoint) -> NSView? { nil }   // clicks pass through
+
+        override func updateTrackingAreas() {
+            super.updateTrackingAreas()
+            trackingAreas.forEach(removeTrackingArea)
+            addTrackingArea(NSTrackingArea(
+                rect: bounds,
+                options: [.activeInKeyWindow, .inVisibleRect, .mouseEnteredAndExited, .mouseMoved],
+                owner: self))
+        }
+
+        override func mouseEntered(with event: NSEvent) { report(event) }
+        override func mouseMoved(with event: NSEvent) { report(event) }
+        override func mouseExited(with event: NSEvent) { onMove?(nil) }
+
+        private func report(_ event: NSEvent) {
+            onMove?(convert(event.locationInWindow, from: nil))
+        }
     }
 }

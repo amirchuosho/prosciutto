@@ -113,8 +113,7 @@ final class ScreenshotWatcher {
     private func copyToPasteboard(path: String, attempt: Int = 0) {
         let url = URL(fileURLWithPath: path)
         if let img = NSImage(contentsOf: url) {
-            pasteboard.clearContents()
-            pasteboard.writeObjects([url as NSURL, img])
+            pasteboard.writeFileBackedImage(url, image: img)
         } else if attempt < 3 {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
                 self?.copyToPasteboard(path: path, attempt: attempt + 1)
