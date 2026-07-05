@@ -8,6 +8,9 @@ public final class ClipboardMonitor {
     private let clock: Clock
     private let ttl: TimeInterval
     private var lastChangeCount: Int
+    /// Guards `lastChangeCount`: `poll()` runs on a background Task while
+    /// `acknowledgeSelfWrite()` is called from the main thread.
+    private let changeLock = NSLock()
     private var pollingTask: Task<Void, Never>?
     public var isPaused = false
     /// Fired after a new item is captured and stored.
@@ -26,9 +29,12 @@ public final class ClipboardMonitor {
 
     public func poll() async throws {
         guard !isPaused else { return }
-        let current = reader.changeCount
-        guard current != lastChangeCount else { return }
-        lastChangeCount = current
+        let current = reader.changeCount           // may hop to main; read before locking
+        changeLock.lock()
+        let isNew = current != lastChangeCount
+        if isNew { lastChangeCount = current }
+        changeLock.unlock()
+        guard isNew else { return }
         guard let snap = reader.snapshot(), exclusion.shouldCapture(snap),
               let kind = KindDetector.detect(snap) else { return }
         let item = ClipItem.make(from: snap, kind: kind, now: clock.now(), ttl: ttl)
@@ -54,5 +60,14 @@ public final class ClipboardMonitor {
     public func stop() {
         pollingTask?.cancel()
         pollingTask = nil
+    }
+
+    /// The app itself just wrote to the pasteboard (e.g. a paste) — swallow that
+    /// change so the next poll doesn't re-capture it as a brand-new clip.
+    public func acknowledgeSelfWrite() {
+        let current = reader.changeCount           // read before locking
+        changeLock.lock()
+        lastChangeCount = current
+        changeLock.unlock()
     }
 }

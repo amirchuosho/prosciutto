@@ -24,6 +24,7 @@ final class Preferences {
         static let saveFiles = "capture.saveFiles"
         static let maxItemSizeBytes = "capture.maxItemSizeBytes"
         static let useFuzzySearch = "search.useFuzzy"
+        static let autoCopyScreenshots = "capture.autoCopyScreenshots"
     }
 
     var customAccentHex: String {
@@ -126,6 +127,10 @@ final class Preferences {
     var useFuzzySearch: Bool {
         get { defaults.bool(forKey: Keys.useFuzzySearch) }                     // default false
         set { defaults.set(newValue, forKey: Keys.useFuzzySearch) }
+    }
+    var autoCopyScreenshots: Bool {
+        get { defaults.object(forKey: Keys.autoCopyScreenshots) as? Bool ?? false }   // default off
+        set { defaults.set(newValue, forKey: Keys.autoCopyScreenshots) }
     }
 
     var captureFilter: CaptureFilter {

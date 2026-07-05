@@ -21,8 +21,14 @@ struct ClipCard: View {
     /// Assign this card to quick-paste slot 1–9 (from the footer slot picker).
     var onAssignSlot: (Int) -> Void = { _ in }
     var onEditingChanged: (Bool) -> Void = { _ in }
+    var onEditImage: () -> Void = {}
+    /// Driven by a single shared hovered-id on the strip, not per-card @State: this
+    /// makes "last card entered wins", so a dropped mouse-exit can't leave the action
+    /// bar stuck on the wrong card. See onHoverChange.
+    var isHovered: Bool = false
+    /// Report hover in/out. The strip records the hovered id centrally.
+    var onHoverChange: (Bool) -> Void = { _ in }
 
-    @State private var hovering = false
     @State private var pickingSlot = false
     @State private var editingTitle = false
     @State private var titleDraft = ""
@@ -37,7 +43,7 @@ struct ClipCard: View {
     private var bandColor: Color { palette.color(for: item.kind) }
     private var onBand: Color { bandColor.readableText }
     private var titleLine: String { item.title ?? style.title }
-    private var showActions: Bool { hovering }
+    private var showActions: Bool { isHovered }
 
     /// Pretty-printed JSON for a code card whose content is valid JSON and not
     /// already formatted; nil otherwise (the Format action is hidden then).
@@ -69,10 +75,18 @@ struct ClipCard: View {
                 radius: isSelected ? 18 : 12, y: isSelected ? 8 : 6)
         .scaleEffect(isSelected ? 1.04 : 1.0)
         .animation(reduceMotion ? nil : .spring(response: 0.26, dampingFraction: 0.8), value: isSelected)
-        .animation(reduceMotion ? nil : .easeOut(duration: 0.14), value: hovering)
-        .onHover { h in
-            hovering = h
-            if !h { withAnimation(.spring(response: 0.3, dampingFraction: 0.78)) { pickingSlot = false } }
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.14), value: isHovered)
+        // onContinuousHover fires on every mouse-move INSIDE the card, so a missed
+        // mouseEntered (common in a dense LazyHStack) self-corrects on the next move
+        // — unlike onHover, which only fires on the boundary crossing and drops the
+        // action bar when moving fast between adjacent cards.
+        .onContinuousHover { phase in
+            switch phase {
+            case .active: onHoverChange(true)
+            case .ended:
+                onHoverChange(false)
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.78)) { pickingSlot = false }
+            }
         }
     }
 
@@ -85,7 +99,7 @@ struct ClipCard: View {
                     Image(systemName: style.icon).font(.system(size: 11, weight: .bold))
                         .foregroundStyle(onBand.opacity(0.9))
                     titleView
-                    if hovering && !editingTitle {
+                    if isHovered && !editingTitle {
                         Button { startTitleEdit() } label: {
                             Image(systemName: "pencil")
                                 .font(.system(size: 12, weight: .semibold))
@@ -263,6 +277,7 @@ struct ClipCard: View {
             actionButton(item.isPinned ? "pin.slash.fill" : "pin.fill", onPin)
             if let pretty = formattableJSON { actionButton("curlybraces") { onEditBody(pretty) } }
             if item.kind.isEditable { actionButton("pencil") { startBodyEdit() } }
+            if item.kind == .image { actionButton("pencil.tip.crop.circle", onEditImage) }
             actionButton("trash.fill", onDelete, destructive: true)
         }
         .padding(4)
@@ -421,6 +436,7 @@ extension ClipCard: Equatable {
     /// imageData excluded) lets only the two cards whose `isSelected` flips rebuild.
     static func == (lhs: ClipCard, rhs: ClipCard) -> Bool {
         lhs.isSelected == rhs.isSelected &&
+        lhs.isHovered == rhs.isHovered &&
         lhs.index == rhs.index &&
         lhs.slotCount == rhs.slotCount &&
         lhs.accent == rhs.accent &&

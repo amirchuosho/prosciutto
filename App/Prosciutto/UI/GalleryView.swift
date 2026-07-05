@@ -10,6 +10,9 @@ struct GalleryView: View {
     @State private var showingAddSection = false
     @State private var newSectionName = ""
     @State private var dropPulse: UUID?
+    /// The single card currently under the pointer. Central so "last entered wins"
+    /// and a dropped mouse-exit can't leave the action bar stuck on the wrong card.
+    @State private var hoveredID: UUID?
 
     private let kinds: [ClipKind] = [.text, .link, .image, .color, .code, .file, .location]
 
@@ -249,7 +252,13 @@ struct GalleryView: View {
                                  onRename: { newTitle in Task { await model.setTitle(item, newTitle) } },
                                  onEditBody: { newText in Task { await model.updateText(item, newText: newText) } },
                                  onAssignSlot: { n in Task { await model.assignSlot(item, slot: n) } },
-                                 onEditingChanged: { model.isEditingTitle = $0 })
+                                 onEditingChanged: { model.isEditingTitle = $0 },
+                                 onEditImage: { model.editImage(item) },
+                                 isHovered: hoveredID == item.id,
+                                 onHoverChange: { active in
+                                    if active { hoveredID = item.id }
+                                    else if hoveredID == item.id { hoveredID = nil }
+                                 })
                             .equatable()
                             .id(item.id)
                             .transition(.scale(scale: 0.9).combined(with: .opacity))

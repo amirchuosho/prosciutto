@@ -7,14 +7,18 @@ final class PasteService {
         pb.clearContents()
         switch item.kind {
         case .image:
-            if let d = item.imageData {
-                pb.setData(d, forType: .png)
+            if let d = item.imageData, let img = NSImage(data: d) {
+                // Write a real NSImage: it puts the standard image types (TIFF etc.)
+                // on the pasteboard, which apps recognize when pasting. Writing only
+                // .png data is understood by far fewer targets.
+                pb.writeObjects([img])
             } else if let path = item.textPlain {
                 // File-backed image: write the file URL (so Finder/apps get the
-                // file) plus its pixels (so editors get the image).
+                // file) plus the image itself (so editors get the pixels).
                 let url = URL(fileURLWithPath: path)
-                pb.writeObjects([url as NSURL])
-                if let d = try? Data(contentsOf: url) { pb.setData(d, forType: .png) }
+                var objects: [NSPasteboardWriting] = [url as NSURL]
+                if let img = NSImage(contentsOf: url) { objects.append(img) }
+                pb.writeObjects(objects)
             }
         case .file:
             if let t = item.textPlain { pb.setString(t, forType: .string) }

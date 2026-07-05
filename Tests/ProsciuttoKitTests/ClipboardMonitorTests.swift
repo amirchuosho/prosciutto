@@ -26,6 +26,22 @@ final class ClipboardMonitorTests: XCTestCase {
         XCTAssertEqual(items[0].textPlain, "copied text")
     }
 
+    func testAcknowledgeSelfWriteSkipsOurOwnPaste() async throws {
+        let reader = FakeReader()
+        let store = InMemoryClipStore()
+        let monitor = ClipboardMonitor(reader: reader, store: store,
+            exclusion: ExclusionPolicy(blockedBundleIDs: []),
+            clock: FixedClock(t: .init(timeIntervalSince1970: 0)), ttl: 60)
+        // The app writes to the pasteboard (e.g. a paste) and acknowledges it.
+        reader.changeCount = 5
+        reader.next = PasteboardSnapshot(plainText: "pasted")
+        monitor.acknowledgeSelfWrite()
+        try await monitor.poll()
+        // That write must NOT become a new clip.
+        let count = try await store.all().count
+        XCTAssertEqual(count, 0)
+    }
+
     func testPollIgnoresUnchangedCount() async throws {
         let reader = FakeReader()
         let store = InMemoryClipStore()

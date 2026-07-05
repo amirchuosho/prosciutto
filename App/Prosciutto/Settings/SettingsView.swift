@@ -8,6 +8,7 @@ struct SettingsView: View {
     // General
     @State private var launchAtLogin = LoginItem.isEnabled
     @State private var pasteAutomatically = Preferences.shared.pasteAutomatically
+    @State private var autoCopyScreenshots = Preferences.shared.autoCopyScreenshots
     @State private var soundEnabled = Preferences.shared.captureSoundEnabled
     @State private var soundName = Preferences.shared.captureSoundName
     @State private var useFuzzy = Preferences.shared.useFuzzySearch
@@ -58,6 +59,8 @@ struct SettingsView: View {
                     .onChange(of: pasteAutomatically) { _, v in Preferences.shared.pasteAutomatically = v }
                 Toggle("Fuzzy search", isOn: $useFuzzy)
                     .onChange(of: useFuzzy) { _, v in Preferences.shared.useFuzzySearch = v; changed() }
+                Toggle("Copy screenshots to clipboard automatically", isOn: $autoCopyScreenshots)
+                    .onChange(of: autoCopyScreenshots) { _, v in Preferences.shared.autoCopyScreenshots = v; changed() }
             }
             Section("Sound") {
                 Toggle("Play a sound when copying", isOn: $soundEnabled)

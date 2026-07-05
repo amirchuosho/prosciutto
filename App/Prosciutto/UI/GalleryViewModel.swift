@@ -23,6 +23,8 @@ final class GalleryViewModel: ObservableObject {
     var onPaste: (ClipItem, Bool) -> Void = { _, _ in }
     /// Set by AppEnvironment. Dismisses the gallery without pasting.
     var onDismiss: () -> Void = {}
+    /// Set by AppEnvironment. Opens the image clip in Preview for editing.
+    var editImage: (ClipItem) -> Void = { _ in }
 
     init(store: ClipStore) {
         self.store = store

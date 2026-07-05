@@ -15,6 +15,8 @@ final class AppEnvironment: ObservableObject {
     let reader = SystemPasteboardReader()
     let hotkey = HotkeyManager()
     let theme = ThemeManager()
+    private let screenshotWatcher = ScreenshotWatcher()
+    private let imageEditor = ImageEditService()
     private(set) var monitor: ClipboardMonitor!
     private(set) var panel: GalleryPanel!
     private(set) var vm: GalleryViewModel!
@@ -40,9 +42,11 @@ final class AppEnvironment: ObservableObject {
         // switched to is already frontmost, and yanking it back would shove it behind.
         panel.onResign = { [weak self] in self?.hideGallery(restoreFocus: false) }
         vm.onDismiss = { [weak self] in self?.hideGallery() }
+        vm.editImage = { [weak self] item in self?.imageEditor.edit(item) }
         vm.onPaste = { [weak self] item, plain in
             guard let self else { return }
             self.paste.write(item, asPlainText: plain)       // always put it on the clipboard
+            self.monitor.acknowledgeSelfWrite()               // ...but don't re-capture it as a dup
             let auto = Preferences.shared.pasteAutomatically
             // Hide first; only synthesize ⌘V AFTER the panel is gone and the
             // previous app is active, so the keystroke never lands in our search.
@@ -80,10 +84,12 @@ final class AppEnvironment: ObservableObject {
         vm.query.fuzzy = Preferences.shared.useFuzzySearch
         reloadHotkey()
         installKeyMonitor()
+        applyScreenshotWatch()
 
         NotificationCenter.default.addObserver(forName: .prosciuttoSettingsChanged, object: nil, queue: .main) { [weak self] _ in
             Task { @MainActor in
                 self?.applyCaptureSettings()
+                self?.applyScreenshotWatch()
                 self?.reloadHotkey()
                 self?.vm.query.fuzzy = Preferences.shared.useFuzzySearch
                 await self?.vm.reload()
@@ -174,6 +180,12 @@ final class AppEnvironment: ObservableObject {
     func applyCaptureSettings() {
         monitor.exclusion = ExclusionPolicy(blockedBundleIDs: Preferences.shared.blockedBundleIDs)
         monitor.captureFilter = Preferences.shared.captureFilter
+    }
+
+    /// Start/stop the screenshot watcher to match the current preference.
+    func applyScreenshotWatch() {
+        if Preferences.shared.autoCopyScreenshots { screenshotWatcher.start() }
+        else { screenshotWatcher.stop() }
     }
 
     /// (Re)register the global open-gallery hotkey from Preferences.
