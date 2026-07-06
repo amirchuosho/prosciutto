@@ -49,6 +49,11 @@ final class GalleryPanel: NSObject {
     var hasSheet: Bool { panel.attachedSheet != nil }
     var isVisible: Bool { panel.isVisible }
 
+    /// True when an event belongs to this panel's window — lets app-wide event
+    /// monitors (e.g. the scroll-to-navigate monitor) scope themselves to the strip
+    /// rather than firing over the Settings window too.
+    func owns(_ window: NSWindow?) -> Bool { window === panel }
+
     private func targetFrame() -> NSRect? {
         guard let screen = NSScreen.main else { return nil }
         let margin: CGFloat = 18

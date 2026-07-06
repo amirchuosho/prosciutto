@@ -24,6 +24,8 @@ final class AppEnvironment: ObservableObject {
     private(set) var vm: GalleryViewModel!
     private var pruneTimer: Timer?
     private var keyMonitor: Any?
+    private var scrollMonitor: Any?
+    private var scrollAccum: CGFloat = 0   // trackpad delta accumulator (points per step)
 
     @Published var isPaused = false
 
@@ -93,6 +95,7 @@ final class AppEnvironment: ObservableObject {
         vm.query.fuzzy = Preferences.shared.useFuzzySearch
         reloadHotkey()
         installKeyMonitor()
+        installScrollMonitor()
         applyScreenshotWatch()
 
         NotificationCenter.default.addObserver(forName: .prosciuttoSettingsChanged, object: nil, queue: .main) { [weak self] _ in
@@ -119,6 +122,7 @@ final class AppEnvironment: ObservableObject {
 
     deinit {
         if let keyMonitor { NSEvent.removeMonitor(keyMonitor) }
+        if let scrollMonitor { NSEvent.removeMonitor(scrollMonitor) }
         pruneTimer?.invalidate()
     }
 
@@ -133,8 +137,7 @@ final class AppEnvironment: ObservableObject {
             vm.sectionFilter = .all     // always start on All, no leftover group
             vm.query.text = ""          // cleared search
             await vm.reload()
-            vm.selectNewestUnpinned()   // land on the newest clip, not the last-paste spot
-            vm.homeScrollToken += 1     // reset the strip to the start (pins visible)
+            vm.resetToHome()            // newest clip + strip reset to start (pins visible)
         }
     }
 
@@ -200,6 +203,47 @@ final class AppEnvironment: ObservableObject {
                 return event
             default:       return event                             // typing → search
             }
+        }
+    }
+
+    /// Scroll over the strip moves the SELECTION like the arrow keys, rather than
+    /// panning. The gallery is selection-driven (the selected card is what pastes), a
+    /// bare mouse wheel doesn't pan a horizontal SwiftUI ScrollView well, and panning
+    /// wouldn't move the highlight anyway. Reuses the local-monitor pattern from
+    /// `installKeyMonitor`; scoped to the panel window so it never hijacks scrolling
+    /// in Settings.
+    private func installScrollMonitor() {
+        scrollMonitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [weak self] event in
+            guard let self, self.panel.isVisible, !self.panel.hasSheet, !self.vm.isEditingTitle,
+                  self.panel.owns(event.window) else { return event }
+            // Horizontal strip: take whichever axis was scrolled (mouse wheel = Y,
+            // trackpad horizontal swipe = X). Normalize so a natural forward gesture
+            // (scroll down / swipe left) advances to the NEXT card.
+            let raw = abs(event.scrollingDeltaX) >= abs(event.scrollingDeltaY)
+                ? event.scrollingDeltaX : event.scrollingDeltaY
+            guard raw != 0 else { return event }
+            let forward = event.isDirectionInvertedFromDevice ? raw : -raw
+
+            if event.hasPreciseScrollingDeltas {
+                // Trackpad. Ignore the inertial momentum phase — otherwise a flick
+                // keeps stepping the selection after the fingers lift, which feels
+                // runaway. Only the active gesture moves the highlight. Accumulate the
+                // small deltas and step once per threshold so a swipe doesn't blur
+                // through the whole strip.
+                guard event.momentumPhase == [] else { return nil }
+                self.scrollAccum += forward
+                // Points of active swipe per one-card step. Higher = slower/calmer;
+                // this is purely a feel constant, tune to taste.
+                let threshold: CGFloat = 36
+                while abs(self.scrollAccum) >= threshold {
+                    self.vm.moveSelection(self.scrollAccum > 0 ? 1 : -1)
+                    self.scrollAccum -= self.scrollAccum > 0 ? threshold : -threshold
+                }
+            } else {
+                // Mouse wheel: one notch = one card.
+                self.vm.moveSelection(forward > 0 ? 1 : -1)
+            }
+            return nil   // consume so the ScrollView doesn't also pan
         }
     }
 

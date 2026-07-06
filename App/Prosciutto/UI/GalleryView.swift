@@ -53,8 +53,12 @@ struct GalleryView: View {
             .tint(theme.accent)
             .preferredColorScheme(theme.colorScheme)
         }
-        .onChange(of: model.sectionFilter) { _, _ in model.selection = 0 }
-        .onChange(of: model.query.text) { _, _ in model.selection = 0 }
+        // Any change to the visible set lands at "home" (newest unpinned + strip to
+        // start), exactly like opening the gallery — so section, type and search all
+        // behave the same and the highlight never sticks at a stale/out-of-range slot.
+        .onChange(of: model.sectionFilter) { _, _ in model.resetToHome() }
+        .onChange(of: model.query.kinds) { _, _ in model.resetToHome() }
+        .onChange(of: model.query.text) { _, _ in model.resetToHome() }
         .alert("New section", isPresented: $showingAddSection) {
             TextField("Name", text: $newSectionName)
             Button("Create") {

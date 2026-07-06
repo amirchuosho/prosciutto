@@ -111,6 +111,15 @@ final class GalleryViewModel: ObservableObject {
         selection = list.firstIndex(where: { !$0.isPinned }) ?? 0
     }
 
+    /// Land the gallery at its "home" position for the CURRENT filter: the newest
+    /// unpinned clip, strip scrolled back to the start (pins visible). Called on open
+    /// and on every visible-set change (section, type, search) so all four behave
+    /// identically and the highlight can never point at a stale / out-of-range slot.
+    func resetToHome() {
+        selectNewestUnpinned()
+        homeScrollToken += 1
+    }
+
     func pasteSelected(asPlainText: Bool = false) {
         let list = filtered()
         guard list.indices.contains(selection) else { return }

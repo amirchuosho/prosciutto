@@ -83,6 +83,17 @@ struct ClipCard: View {
         .onChange(of: isHovered) { _, h in
             if !h { withAnimation(.spring(response: 0.3, dampingFraction: 0.78)) { pickingSlot = false } }
         }
+        // A card can be torn down mid-edit — LazyHStack recycling it off-screen, a
+        // filter/section change removing it, or a reload after a new capture. Its
+        // local editing @State vanishes with the view, but `vm.isEditingTitle` (the
+        // key-monitor guard) is set via a callback and would stay stuck `true`,
+        // silently killing arrows AND paste until an app restart. Abandoning any
+        // active edit here fires `onEditingChanged(false)`, keeping the guard synced
+        // to the editor's real lifecycle.
+        .onDisappear {
+            if editingTitle { cancelTitleEdit() }
+            if editingBody { cancelBodyEdit() }
+        }
     }
 
     // MARK: Header band
