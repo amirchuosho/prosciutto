@@ -27,6 +27,8 @@ struct KindStyle {
             return KindStyle(icon: "chevron.left.forwardslash.chevron.right", label: "CODE")
         case .file:
             return KindStyle(icon: "doc", label: "FILE")
+        case .video:
+            return KindStyle(icon: "video", label: "VIDEO")
         case .location:
             return KindStyle(icon: "mappin.and.ellipse", label: "PLACE")
         }

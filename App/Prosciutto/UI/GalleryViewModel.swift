@@ -28,8 +28,11 @@ final class GalleryViewModel: ObservableObject {
     var onPaste: (ClipItem, Bool) -> Void = { _, _ in }
     /// Set by AppEnvironment. Dismisses the gallery without pasting.
     var onDismiss: () -> Void = {}
-    /// Set by AppEnvironment. Opens the image clip in Preview for editing.
-    var editImage: (ClipItem) -> Void = { _ in }
+    /// Set by AppEnvironment. Opens the clip for editing — an image in Preview, a
+    /// recording in QuickTime Player.
+    var editMedia: (ClipItem) -> Void = { _ in }
+    /// Set by AppEnvironment. Opens a recording in QuickTime and jumps to its Trim UI.
+    var cropMedia: (ClipItem) -> Void = { _ in }
 
     init(store: ClipStore) {
         self.store = store

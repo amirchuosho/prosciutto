@@ -21,7 +21,8 @@ struct ClipCard: View {
     /// Assign this card to quick-paste slot 1–9 (from the footer slot picker).
     var onAssignSlot: (Int) -> Void = { _ in }
     var onEditingChanged: (Bool) -> Void = { _ in }
-    var onEditImage: () -> Void = {}
+    var onEditMedia: () -> Void = {}
+    var onCropMedia: () -> Void = {}
     /// Whether the pointer is over this card. Computed centrally by the strip from
     /// the cursor position (see GalleryView), so hover can't miss enter/exit events.
     var isHovered: Bool = false
@@ -188,6 +189,9 @@ struct ClipCard: View {
 
     private var headerIcon: NSImage? {
         if fileBackedImage { return AppIconProvider.icon(forBundleID: "com.apple.Preview") }
+        // A recording's recorded-from app is meaningless (whatever was frontmost) —
+        // show QuickTime's icon, the app that opens it, like Preview for images.
+        if item.kind == .video { return AppIconProvider.icon(forBundleID: "com.apple.QuickTimePlayerX") }
         return AppIconProvider.icon(forBundleID: item.sourceAppBundleID)
     }
 
@@ -286,7 +290,11 @@ struct ClipCard: View {
             actionButton(item.isPinned ? "pin.slash.fill" : "pin.fill", onPin)
             if let pretty = formattableJSON { actionButton("curlybraces") { onEditBody(pretty) } }
             if item.kind.isEditable { actionButton("pencil") { startBodyEdit() } }
-            if item.kind == .image { actionButton("pencil.tip.crop.circle", onEditImage) }
+            if item.kind == .image { actionButton("pencil.tip.crop.circle", onEditMedia) }
+            if item.kind == .video {
+                actionButton("arrow.up.forward.app", onEditMedia)   // open/play in QuickTime
+                actionButton("scissors", onCropMedia)               // trim in QuickTime
+            }
             actionButton("trash.fill", onDelete, destructive: true)
         }
         .padding(4)
@@ -360,6 +368,7 @@ struct ClipCard: View {
     @ViewBuilder private var kindContent: some View {
         switch item.kind {
         case .image: ImageCard(item: item)
+        case .video: VideoCard(item: item)
         case .link:  LinkCard(item: item)
         case .color: ColorCard(item: item)
         case .code:  CodeCard(item: item)
@@ -431,6 +440,9 @@ struct ClipCard: View {
         case .file:
             let count = (item.textPlain ?? "").split(separator: "\n").count
             return count > 1 ? "\(count) files" : (item.sourceAppName ?? "File")
+        case .video:
+            if let p = item.textPlain { return (p as NSString).lastPathComponent }
+            return "Recording"
         case .location: return "Location"
         }
     }

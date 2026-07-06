@@ -13,4 +13,16 @@ extension NSPasteboard {
         clearContents()
         writeObjects([url as NSURL, image])
     }
+
+    /// Put a recording on the pasteboard as a FILE: the file URL (so pasting drops
+    /// the `.mov` into Finder/Mail/Slack) plus an optional first-frame thumbnail (so
+    /// the gallery tile has a preview, captured back as the clip's image data). Unlike
+    /// an image, the video bytes are NOT written — the URL is the payload; the
+    /// thumbnail is decoration.
+    func writeFileBackedVideo(_ url: URL, thumbnail: NSImage?) {
+        clearContents()
+        var objects: [NSPasteboardWriting] = [url as NSURL]
+        if let thumbnail { objects.append(thumbnail) }
+        writeObjects(objects)
+    }
 }

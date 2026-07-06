@@ -64,5 +64,16 @@ final class KindDetectorTests: XCTestCase {
             URL(fileURLWithPath: "/tmp/a.png"), URL(fileURLWithPath: "/tmp/doc.pdf")])
         XCTAssertEqual(KindDetector.detect(mixed), .file)
     }
+    func testVideoFileDetectedAsVideo() {
+        let mov = PasteboardSnapshot(fileURLs: [URL(fileURLWithPath: "/tmp/Screen Recording.MOV")])
+        XCTAssertEqual(KindDetector.detect(mov), .video)
+        let mp4 = PasteboardSnapshot(fileURLs: [URL(fileURLWithPath: "/tmp/clip.mp4")])
+        XCTAssertEqual(KindDetector.detect(mp4), .video)
+    }
+    func testMultipleVideosAreFileNotVideo() {
+        let clips = PasteboardSnapshot(fileURLs: [
+            URL(fileURLWithPath: "/tmp/a.mov"), URL(fileURLWithPath: "/tmp/b.mp4")])
+        XCTAssertEqual(KindDetector.detect(clips), .file)
+    }
     func testEmpty() { XCTAssertNil(KindDetector.detect(PasteboardSnapshot())) }
 }

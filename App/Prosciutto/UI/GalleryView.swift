@@ -23,8 +23,11 @@ struct GalleryView: View {
     /// against each card's frame — one tracker, so it can't miss enter/exit events.
     @State private var hoveredID: UUID?
     @State private var cardFrames: [UUID: CGRect] = [:]
+    /// Last cursor position reported by the hover tracker (strip coords). Kept so the
+    /// hovered tile can be recomputed after a reflow when the cursor hasn't moved.
+    @State private var lastHoverPoint: CGPoint?
 
-    private let kinds: [ClipKind] = [.text, .link, .image, .color, .code, .file, .location]
+    private let kinds: [ClipKind] = [.text, .link, .image, .video, .color, .code, .file, .location]
 
     var body: some View {
         VStack(spacing: 10) {
@@ -263,7 +266,8 @@ struct GalleryView: View {
                                  onEditBody: { newText in Task { await model.updateText(item, newText: newText) } },
                                  onAssignSlot: { n in Task { await model.assignSlot(item, slot: n) } },
                                  onEditingChanged: { model.isEditingTitle = $0 },
-                                 onEditImage: { model.editImage(item) },
+                                 onEditMedia: { model.editMedia(item) },
+                                 onCropMedia: { model.cropMedia(item) },
                                  isHovered: hoveredID == item.id)
                             .equatable()
                             .id(item.id)
@@ -286,7 +290,15 @@ struct GalleryView: View {
                 // animates the colour delta — the tile visibly morphs old→new theme.
                 .id(theme.theme)
                 .coordinateSpace(name: "galleryStrip")
-                .onPreferenceChange(CardFramesKey.self) { cardFrames = $0 }
+                .onPreferenceChange(CardFramesKey.self) { frames in
+                    cardFrames = frames
+                    // After a reflow (a tile deleted, reordered, or the strip
+                    // scrolled) a DIFFERENT tile can sit under a stationary cursor
+                    // with no mouseMoved to update hover — so the new tile showed no
+                    // action bar until the mouse jiggled. Recompute from the last
+                    // known point so it appears immediately.
+                    hoveredID = lastHoverPoint.flatMap { p in frames.first { $0.value.contains(p) }?.key }
+                }
                 // ONE hover tracker for the whole strip, via an AppKit NSTrackingArea
                 // in a click-transparent overlay. SwiftUI's .onContinuousHover tears
                 // down and rebuilds its tracking area every time the strip re-renders
@@ -298,6 +310,7 @@ struct GalleryView: View {
                 // even when the strip is scrolled, and hitTest→nil lets clicks through.
                 .overlay(
                     StripHoverTracker { pt in
+                        lastHoverPoint = pt
                         hoveredID = pt.flatMap { p in cardFrames.first { $0.value.contains(p) }?.key }
                     }
                 )

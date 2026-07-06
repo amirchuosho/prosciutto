@@ -18,6 +18,7 @@ final class AppEnvironment: ObservableObject {
     let theme = ThemeManager()
     private let screenshotWatcher = ScreenshotWatcher()
     private let imageEditor = ImageEditService()
+    private let videoEditor = VideoEditService()
     private(set) var monitor: ClipboardMonitor!
     private(set) var panel: GalleryPanel!
     private(set) var vm: GalleryViewModel!
@@ -43,7 +44,11 @@ final class AppEnvironment: ObservableObject {
         // switched to is already frontmost, and yanking it back would shove it behind.
         panel.onResign = { [weak self] in self?.hideGallery(restoreFocus: false) }
         vm.onDismiss = { [weak self] in self?.hideGallery() }
-        vm.editImage = { [weak self] item in self?.imageEditor.edit(item) }
+        vm.editMedia = { [weak self] item in
+            if item.kind == .video { self?.videoEditor.edit(item) }
+            else { self?.imageEditor.edit(item) }
+        }
+        vm.cropMedia = { [weak self] item in self?.videoEditor.crop(item) }
         vm.onPaste = { [weak self] item, plain in
             guard let self else { return }
             self.paste.write(item, asPlainText: plain)       // always put it on the clipboard
@@ -204,9 +209,15 @@ final class AppEnvironment: ObservableObject {
         monitor.captureFilter = Preferences.shared.captureFilter
     }
 
-    /// Start/stop the screenshot watcher to match the current preference.
+    /// Start/stop the screen-capture watcher to match the current preferences. One
+    /// watcher covers both screenshots and recordings; per-type flags decide which it
+    /// copies. It runs whenever either is enabled.
     func applyScreenshotWatch() {
-        if Preferences.shared.autoCopyScreenshots { screenshotWatcher.start() }
+        let shots = Preferences.shared.autoCopyScreenshots
+        let recs = Preferences.shared.autoCopyRecordings
+        screenshotWatcher.copyScreenshots = shots
+        screenshotWatcher.copyRecordings = recs
+        if shots || recs { screenshotWatcher.start() }
         else { screenshotWatcher.stop() }
     }
 

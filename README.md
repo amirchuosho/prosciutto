@@ -32,7 +32,7 @@ You copy things all day — a link, a snippet, that one command you always forge
 exactly one of them. Prosciutto remembers **all** of them.
 
 Tap a hotkey and your history slides up as a row of big, colourful cards — text, links, code,
-images, colours, files, map locations, each with its own look. Arrow to the one you want, hit
+images, videos, colours, files, map locations, each with its own look. Arrow to the one you want, hit
 return, it's pasted back into whatever you were doing. Fast, pretty, out of your way.
 
 **Free**, **open source**, lives entirely **on your Mac**, one Homebrew command. No account, no
@@ -43,14 +43,14 @@ subscription, no catch.
 
 ## What it does
 
-- 🎴 **Visual card gallery** — big cards with a coloured type header, source-app icon, and rich previews (images, links, colour swatches, code, files)
-- 🌈 **Type colour-coding** — text, link, image, colour, code, file each have their own colour; sections show as a separate tag so colour never means two things
+- 🎴 **Visual card gallery** — big cards with a coloured type header, source-app icon, and rich previews (images, video thumbnails, links, colour swatches, code, files)
+- 🌈 **Type colour-coding** — text, link, image, video, colour, code, file each have their own colour; sections show as a separate tag so colour never means two things
 - ⌨️ **Keyboard-first** — `⌘⇧V` to summon, arrows to move, `⏎` to paste, `⌘1`–`⌘9` to quick-paste, `⌘⌫` to delete, `esc` to dismiss
 - 📌 **Pin, reorder & organise** — pin favourites and drag to reorder them (stable `⌘1`–`⌘9`); file clips into custom **sections** (drag a card onto a section; recolour, rename, drop-to-file)
 - 🏷️ **Name any clip** — click a card's title to rename it in place; titles are searchable (name a password "Instagram", find it by "instagram")
 - ✏️ **Inline edit** — edit content right in the card, no modal; code clips get a monospaced editor with one-click **JSON formatting**
-- 📸 **Auto-copy screenshots** *(optional)* — turn it on and every new screenshot lands on the clipboard, ready to paste as the file
-- 🖼️ **Edit images in Preview** — open an image clip in Preview from the gallery; when you save, the edit comes back as a fresh clip
+- 📸 **Auto-copy screenshots & recordings** *(optional)* — turn it on and every new screenshot or screen recording lands on the clipboard, ready to paste as the file (recordings get a first-frame thumbnail on their card)
+- 🖼️ **Edit images & trim recordings** — open an image clip in Preview, or a recording in QuickTime (with a one-tap **trim**) from the gallery; when you save, the edit comes back as a fresh clip
 - 🔎 **Search & filter** — live search across titles and content, filter by type
 - 🎨 **9 full named themes** — not accent swatches; each is a whole world (background + card surfaces + per-type colours + accent). Pick a personality, or roll your own with a **Custom** accent (see [Themes](#themes) below)
 - 🔁 **Two paste modes** — paste automatically on select, or "load" the item so your next `⌘V` pastes it

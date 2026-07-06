@@ -14,14 +14,15 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.prosciutto.Prosciutto
-        MARKETING_VERSION: "0.2.1"
-        CURRENT_PROJECT_VERSION: "3"
+        MARKETING_VERSION: "0.3.0"
+        CURRENT_PROJECT_VERSION: "4"
         ENABLE_HARDENED_RUNTIME: YES
         SWIFT_VERSION: "5.10"
         GENERATE_INFOPLIST_FILE: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         INFOPLIST_KEY_LSUIElement: YES
         INFOPLIST_KEY_NSHumanReadableCopyright: "© 2026 Prosciutto contributors"
+        INFOPLIST_KEY_NSAppleEventsUsageDescription: "Prosciutto uses automation to open a recording's trim controls in QuickTime Player."
         CODE_SIGN_IDENTITY: "-"
         CODE_SIGNING_REQUIRED: NO
         CODE_SIGNING_ALLOWED: NO

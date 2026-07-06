@@ -7,13 +7,23 @@ public enum KindDetector {
     private static let imageExtensions: Set<String> =
         ["png", "jpg", "jpeg", "gif", "heic", "heif", "webp", "tiff", "tif", "bmp"]
 
+    /// Video containers we treat as a `.video` clip (file-backed, previewed by a
+    /// first-frame thumbnail). Screen recordings are `.mov`; the rest are common
+    /// exports a user might copy from Finder.
+    public static let videoExtensions: Set<String> =
+        ["mov", "mp4", "m4v", "mkv", "webm", "avi"]
+
     public static func detect(_ s: PasteboardSnapshot) -> ClipKind? {
         // Multiple files (e.g. several pics from Finder) → a file clip that lists
         // names/count, NOT a single-image preview of just the first one.
         if s.fileURLs.count > 1 { return .file }
         if let file = s.fileURLs.first {
-            // A single image file (copied from Finder) is treated as an image.
-            return imageExtensions.contains(file.pathExtension.lowercased()) ? .image : .file
+            let ext = file.pathExtension.lowercased()
+            // A single image file (copied from Finder) is treated as an image, a
+            // single video file as a video; anything else is a plain file clip.
+            if imageExtensions.contains(ext) { return .image }
+            if videoExtensions.contains(ext) { return .video }
+            return .file
         }
         if s.imageData != nil { return .image }
         if let raw = s.plainText {

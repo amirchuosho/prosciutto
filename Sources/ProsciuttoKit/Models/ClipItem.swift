@@ -54,7 +54,11 @@ public struct ClipItem: Identifiable, Sendable, Equatable {
         // grey doc icon), so for file-backed image clips we drop the inline data
         // and render the real file from its path instead.
         let isImageFile = kind == .image && filePath != nil
-        let imageData: Data? = isImageFile ? nil : snapshot.imageData
+        // A video clip is file-backed too. Its pasteboard image is UNRELIABLE — our
+        // watcher supplies a real first-frame thumbnail, but a Finder copy of the
+        // .mov supplies the generic 1024² file icon. So drop it (like an image file)
+        // and let the tile regenerate a real frame from the .mov on disk.
+        let imageData: Data? = (isImageFile || kind == .video) ? nil : snapshot.imageData
         // File clips store ALL their paths (newline-joined) so a multi-file clip
         // renders as a name list / count, not a single preview. Hash by the
         // path(s), not the flaky pasteboard icon, so dedupe is stable.
@@ -67,6 +71,7 @@ public struct ClipItem: Identifiable, Sendable, Equatable {
         switch kind {
         case .file:  text = fileText ?? snapshot.plainText
         case .image: text = isImageFile ? filePath : snapshot.plainText
+        case .video: text = filePath ?? snapshot.plainText   // file-backed: path in textPlain
         default:     text = snapshot.plainText
         }
         return ClipItem(

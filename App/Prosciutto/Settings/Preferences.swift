@@ -22,9 +22,11 @@ final class Preferences {
         static let saveText = "capture.saveText"
         static let saveImages = "capture.saveImages"
         static let saveFiles = "capture.saveFiles"
+        static let saveVideos = "capture.saveVideos"
         static let maxItemSizeBytes = "capture.maxItemSizeBytes"
         static let useFuzzySearch = "search.useFuzzy"
         static let autoCopyScreenshots = "capture.autoCopyScreenshots"
+        static let autoCopyRecordings = "capture.autoCopyRecordings"
     }
 
     var customAccentHex: String {
@@ -120,6 +122,10 @@ final class Preferences {
         get { defaults.object(forKey: Keys.saveFiles) as? Bool ?? true }
         set { defaults.set(newValue, forKey: Keys.saveFiles) }
     }
+    var saveVideos: Bool {
+        get { defaults.object(forKey: Keys.saveVideos) as? Bool ?? true }
+        set { defaults.set(newValue, forKey: Keys.saveVideos) }
+    }
     var maxItemSizeBytes: Int {
         get { defaults.object(forKey: Keys.maxItemSizeBytes) as? Int ?? 0 }   // 0 = no limit
         set { defaults.set(newValue, forKey: Keys.maxItemSizeBytes) }
@@ -132,10 +138,14 @@ final class Preferences {
         get { defaults.object(forKey: Keys.autoCopyScreenshots) as? Bool ?? false }   // default off
         set { defaults.set(newValue, forKey: Keys.autoCopyScreenshots) }
     }
+    var autoCopyRecordings: Bool {
+        get { defaults.object(forKey: Keys.autoCopyRecordings) as? Bool ?? false }     // default off
+        set { defaults.set(newValue, forKey: Keys.autoCopyRecordings) }
+    }
 
     var captureFilter: CaptureFilter {
         CaptureFilter.from(saveText: saveText, saveImages: saveImages,
-                           saveFiles: saveFiles, maxBytes: maxItemSizeBytes)
+                           saveFiles: saveFiles, saveVideos: saveVideos, maxBytes: maxItemSizeBytes)
     }
 
     // NSEvent.ModifierFlags rawValues (avoids importing AppKit here):

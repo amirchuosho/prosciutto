@@ -74,7 +74,7 @@ final class ClipboardMonitorTests: XCTestCase {
         let monitor = ClipboardMonitor(reader: reader, store: store,
             exclusion: ExclusionPolicy(blockedBundleIDs: []),
             clock: FixedClock(t: .init(timeIntervalSince1970: 0)), ttl: 60,
-            captureFilter: CaptureFilter.from(saveText: false, saveImages: true, saveFiles: true, maxBytes: 0))
+            captureFilter: CaptureFilter.from(saveText: false, saveImages: true, saveFiles: true, saveVideos: true, maxBytes: 0))
         reader.changeCount = 1
         reader.next = PasteboardSnapshot(plainText: "some text")
         try await monitor.poll()

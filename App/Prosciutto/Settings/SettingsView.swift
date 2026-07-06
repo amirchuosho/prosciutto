@@ -9,6 +9,7 @@ struct SettingsView: View {
     @State private var launchAtLogin = LoginItem.isEnabled
     @State private var pasteAutomatically = Preferences.shared.pasteAutomatically
     @State private var autoCopyScreenshots = Preferences.shared.autoCopyScreenshots
+    @State private var autoCopyRecordings = Preferences.shared.autoCopyRecordings
     @State private var soundEnabled = Preferences.shared.captureSoundEnabled
     @State private var soundName = Preferences.shared.captureSoundName
     @State private var useFuzzy = Preferences.shared.useFuzzySearch
@@ -26,6 +27,7 @@ struct SettingsView: View {
     @State private var maxSizeMB = max(Preferences.shared.maxItemSizeBytes / 1_000_000, 1)
     @State private var saveText = Preferences.shared.saveText
     @State private var saveImages = Preferences.shared.saveImages
+    @State private var saveVideos = Preferences.shared.saveVideos
     @State private var saveFiles = Preferences.shared.saveFiles
 
     private let systemSounds = ["Pop", "Tink", "Glass", "Bottle", "Frog", "Submarine", "Morse"]
@@ -61,6 +63,8 @@ struct SettingsView: View {
                     .onChange(of: useFuzzy) { _, v in Preferences.shared.useFuzzySearch = v; changed() }
                 Toggle("Copy screenshots to clipboard automatically", isOn: $autoCopyScreenshots)
                     .onChange(of: autoCopyScreenshots) { _, v in Preferences.shared.autoCopyScreenshots = v; changed() }
+                Toggle("Copy screen recordings to clipboard automatically", isOn: $autoCopyRecordings)
+                    .onChange(of: autoCopyRecordings) { _, v in Preferences.shared.autoCopyRecordings = v; changed() }
             }
             Section("Sound") {
                 Toggle("Play a sound when copying", isOn: $soundEnabled)
@@ -130,6 +134,7 @@ struct SettingsView: View {
             Section("Save which types") {
                 Toggle("Text", isOn: $saveText).onChange(of: saveText) { _, v in Preferences.shared.saveText = v; changed() }
                 Toggle("Images", isOn: $saveImages).onChange(of: saveImages) { _, v in Preferences.shared.saveImages = v; changed() }
+                Toggle("Videos", isOn: $saveVideos).onChange(of: saveVideos) { _, v in Preferences.shared.saveVideos = v; changed() }
                 Toggle("Files", isOn: $saveFiles).onChange(of: saveFiles) { _, v in Preferences.shared.saveFiles = v; changed() }
             }
         }

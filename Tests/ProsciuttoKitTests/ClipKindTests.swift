@@ -10,5 +10,6 @@ final class ClipKindTests: XCTestCase {
     func testNonEditableKinds() {
         XCTAssertFalse(ClipKind.image.isEditable)
         XCTAssertFalse(ClipKind.file.isEditable)
+        XCTAssertFalse(ClipKind.video.isEditable)
     }
 }

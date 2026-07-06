@@ -17,16 +17,18 @@ public struct CaptureFilter: Sendable {
         return true
     }
 
-    public static let allKinds: Set<ClipKind> = [.text, .rtf, .link, .color, .code, .image, .file, .location]
+    public static let allKinds: Set<ClipKind> = [.text, .rtf, .link, .color, .code, .image, .file, .location, .video]
 
     public static let unrestricted = CaptureFilter()
 
-    /// Build the enabled-kinds set from the three save-by-type toggles.
-    public static func from(saveText: Bool, saveImages: Bool, saveFiles: Bool, maxBytes: Int) -> CaptureFilter {
+    /// Build the enabled-kinds set from the save-by-type toggles.
+    public static func from(saveText: Bool, saveImages: Bool, saveFiles: Bool,
+                            saveVideos: Bool, maxBytes: Int) -> CaptureFilter {
         var kinds = Set<ClipKind>()
         if saveText { kinds.formUnion([.text, .rtf, .link, .color, .code, .location]) }
         if saveImages { kinds.insert(.image) }
         if saveFiles { kinds.insert(.file) }
+        if saveVideos { kinds.insert(.video) }
         return CaptureFilter(enabledKinds: kinds, maxBytes: maxBytes)
     }
 }

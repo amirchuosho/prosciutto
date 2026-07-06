@@ -20,6 +20,16 @@ final class PasteService {
                 if let img = NSImage(contentsOf: url) { objects.append(img) }
                 pb.writeObjects(objects)
             }
+        case .video:
+            // File-backed recording: write the file URL so pasting drops the .mov
+            // into Finder/Mail/Slack, plus the thumbnail so image targets get a
+            // preview. The path lives in textPlain (like a file-backed image).
+            if let path = item.textPlain {
+                let url = URL(fileURLWithPath: path)
+                var objects: [NSPasteboardWriting] = [url as NSURL]
+                if let d = item.imageData, let thumb = NSImage(data: d) { objects.append(thumb) }
+                pb.writeObjects(objects)
+            }
         case .file:
             if let t = item.textPlain { pb.setString(t, forType: .string) }
         default:
