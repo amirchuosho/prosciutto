@@ -30,6 +30,10 @@ private struct MenuContent: View {
         Button("Open Prosciutto") { env.openGallery() }
             .keyboardShortcut("v", modifiers: [.command, .shift])
         Divider()
+        if env.pasteIsInstalled {
+            Button("Import from Paste…") { env.importFromPaste() }
+            Divider()
+        }
         Button(env.isPaused ? "Resume Capture" : "Pause Capture") { env.togglePause() }
         Button("Settings…") {
             NSApp.activate(ignoringOtherApps: true)
