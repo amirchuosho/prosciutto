@@ -36,9 +36,20 @@ final class PasteEnvelopeTests: XCTestCase {
 
     func testBplist() throws { assertRecovers(try bplistEnvelope(), "bplist") }
     func testJSON() { assertRecovers(jsonEnvelope(), "json") }
-    func testDeflatedJSON() { assertRecovers(compress(jsonEnvelope(), COMPRESSION_ZLIB), "deflate(json)") }
-    func testLZFSEBplist() throws { assertRecovers(compress(try bplistEnvelope(), COMPRESSION_LZFSE), "lzfse(bplist)") }
-    func testDeflatedBplist() throws { assertRecovers(compress(try bplistEnvelope(), COMPRESSION_ZLIB), "deflate(bplist)") }
+
+    /// Every Apple compressor × both envelope encodings must survive the decoder — so no
+    /// future Paste build's compression choice can make us skip an item.
+    func testEveryCompressorRoundTrips() throws {
+        let algos: [(String, compression_algorithm)] = [
+            ("zlib", COMPRESSION_ZLIB), ("lzfse", COMPRESSION_LZFSE), ("lzma", COMPRESSION_LZMA),
+            ("lz4raw", COMPRESSION_LZ4_RAW), ("lz4", COMPRESSION_LZ4),
+            ("lzbitmap", COMPRESSION_LZBITMAP), ("brotli", COMPRESSION_BROTLI),
+        ]
+        for (name, algo) in algos {
+            assertRecovers(compress(jsonEnvelope(), algo), "\(name)(json)")
+            assertRecovers(compress(try bplistEnvelope(), algo), "\(name)(bplist)")
+        }
+    }
 
     func testGarbageIsEmpty() {
         XCTAssertTrue(PasteReader.parseEnvelope(Data([0x00, 0x01, 0x02, 0x03])).isEmpty)

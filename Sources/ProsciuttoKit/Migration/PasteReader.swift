@@ -26,6 +26,9 @@ public struct PasteItem: Sendable {
     public let sourceBundleID: String?
     public let sourceAppName: String?
     public let dataByType: [String: Data]   // UTI → bytes
+    /// Why this item's data couldn't be decoded (nil if it decoded fine). Surfaced in the
+    /// migration log so a future format change self-reports instead of needing DB spelunking.
+    public let skipSignature: String?
 }
 
 private let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
@@ -187,19 +190,23 @@ public final class PasteReader {
             let created: Date? = sqlite3_column_type(st, 6) == SQLITE_NULL
                 ? nil : Date(timeIntervalSinceReferenceDate: sqlite3_column_double(st, 6))
             let blob = blobData(st, 7)
-            let dbt = blob.map { decode($0) } ?? [:]
+            let decoded = blob.map { decode($0) }
             out.append(PasteItem(pk: pk, listPk: listPk, order: order, rawType: raw,
                                  title: title, identifier: ident, createdAt: created,
                                  sourceBundleID: text(st, 8), sourceAppName: text(st, 9),
-                                 dataByType: dbt))
+                                 dataByType: decoded?.dbt ?? [:],
+                                 skipSignature: blob == nil ? "no-data-row" : decoded?.skip))
         }
         return out
     }
 
     // MARK: blob → dataByType
 
-    private func decode(_ blob: Data) -> [String: Data] {
-        guard let flag = blob.first else { return [:] }
+    /// Returns the decoded UTI→bytes map and, when nothing decoded, a short `skip` signature
+    /// describing why (missing external file, unknown storage flag, or the payload's leading
+    /// bytes) — so the migration log pinpoints an unsupported format without needing the DB.
+    private func decode(_ blob: Data) -> (dbt: [String: Data], skip: String?) {
+        guard let flag = blob.first else { return ([:], "empty-blob") }
         let payload: Data
         switch flag {
         case 1:
@@ -208,27 +215,37 @@ public final class PasteReader {
             let end = min(37, blob.count)
             let uuid = String(data: blob.subdata(in: 1..<end), encoding: .ascii)?
                 .trimmingCharacters(in: CharacterSet(charactersIn: "\0")) ?? ""
-            guard !uuid.isEmpty,
-                  let ext = try? Data(contentsOf: externalDir.appendingPathComponent(uuid))
-            else { return [:] }
+            guard !uuid.isEmpty else { return ([:], "external-ref-malformed") }
+            guard let ext = try? Data(contentsOf: externalDir.appendingPathComponent(uuid))
+            else { return ([:], "external-file-missing") }
             payload = ext
         default:
-            return [:]
+            return ([:], "unknown-storage-flag-\(flag)")
         }
-        return Self.parseEnvelope(payload)
+        let dbt = Self.parseEnvelope(payload)
+        guard dbt.isEmpty else { return (dbt, nil) }
+        let head = payload.prefix(8).map { String(format: "%02x", $0) }.joined()
+        return ([:], "undecodable-payload prefix=\(head)")
     }
+
+    /// Every Apple Compression algorithm — so whatever a Paste build compresses with, we can
+    /// inflate it. A skipped item should be a last resort, never a format we simply didn't try.
+    private static let algorithms: [compression_algorithm] = [
+        COMPRESSION_ZLIB, COMPRESSION_LZFSE, COMPRESSION_LZMA,
+        COMPRESSION_LZ4_RAW, COMPRESSION_LZ4, COMPRESSION_LZBITMAP, COMPRESSION_BROTLI,
+    ]
 
     /// A pasteboard payload is `[{ "types": [...], "dataByType": { UTI: <bytes|base64> } }]`.
     /// Paste serializes it as a **bplist** (older/direct) or **JSON** (newer/Setapp/synced),
-    /// and either may be compressed — LZFSE-framed, or raw DEFLATE. Try the plain encodings,
-    /// then decompress and retry. Returns the UTI→bytes map (empty if nothing decodes).
+    /// and either may be **compressed** with any Apple algorithm. Try the plain encodings,
+    /// then inflate with each algorithm and re-parse; accept only a result that yields a valid
+    /// envelope (self-validating — a wrong algorithm can't fake a plist/JSON with `dataByType`).
+    /// Returns the UTI→bytes map (empty only if truly nothing decodes).
     static func parseEnvelope(_ data: Data) -> [String: Data] {
         if let d = dataByType(fromPlist: data) { return d }
         if let d = dataByType(fromJSON: data) { return d }
-        // Compressed: LZFSE frame ("bvx"), or raw DEFLATE (Apple COMPRESSION_ZLIB — the
-        // JSON/bplist has no header, so we just attempt it). Re-parse the inflated bytes.
-        for inflated in [inflate(data, COMPRESSION_LZFSE, requireBVX: true),
-                         inflate(data, COMPRESSION_ZLIB, requireBVX: false)].compactMap({ $0 }) {
+        for algo in algorithms {
+            guard let inflated = inflate(data, algo) else { continue }
             if let d = dataByType(fromPlist: inflated) ?? dataByType(fromJSON: inflated) { return d }
         }
         return [:]
@@ -262,11 +279,10 @@ public final class PasteReader {
         return out.isEmpty ? nil : out
     }
 
-    /// Inflate with an Apple Compression algorithm. For LZFSE we first require the "bvx"
-    /// frame magic (so we don't mis-decode arbitrary data); raw DEFLATE has no magic, so we
-    /// just attempt it and let the caller re-parse the result.
-    static func inflate(_ data: Data, _ algorithm: compression_algorithm, requireBVX: Bool) -> Data? {
-        if requireBVX { guard data.count > 4, Array(data.prefix(3)) == [0x62, 0x76, 0x78] else { return nil } }
+    /// Inflate with a given Apple Compression algorithm. No magic sniffing — the caller
+    /// re-parses and validates the output, so a wrong algorithm just yields nil/garbage that
+    /// fails to parse. Grows the output buffer until it fits.
+    static func inflate(_ data: Data, _ algorithm: compression_algorithm) -> Data? {
         guard !data.isEmpty else { return nil }
         var capacity = max(data.count * 8, 1 << 16)
         for _ in 0..<8 {

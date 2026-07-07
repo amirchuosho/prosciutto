@@ -8,6 +8,9 @@ public struct PasteImportSummary: Sendable, Equatable {
     public var empties = 0           // Paste items with no usable content
     public var missingFiles = 0      // file items whose on-disk original is gone
     public var sectionsCreated = 0
+    /// Path to a written log breaking down why items were skipped (nil if none skipped).
+    /// Lets a future format wall self-report — no DB spelunking, no bugging the user.
+    public var logPath: String?
 }
 
 /// Migrates a Paste store into any `ClipStore`. Pure orchestration — no Core Data, no UI —
@@ -62,6 +65,8 @@ public enum PasteImporter {
         let clipboardPk = lists.first { !$0.isPinboard }?.pk
         let grouped = Dictionary(grouping: items, by: { $0.listPk ?? clipboardPk })
 
+        var skipReasons: [String: Int] = [:]   // signature → count, for the diagnostics log
+
         for list in lists {
             let sID: UUID? = list.isPinboard ? sectionID[list.name.lowercased()] : nil
             let its = (grouped[list.pk] ?? []).sorted {
@@ -76,7 +81,11 @@ public enum PasteImporter {
                     if let dst = adoptFile(src, id: id, into: filesDir) { snap.fileURLs = [dst] }
                     else if !FileManager.default.fileExists(atPath: src.path) { summary.missingFiles += 1 }
                 }
-                guard let kind = KindDetector.detect(snap) else { summary.empties += 1; continue }
+                guard let kind = KindDetector.detect(snap) else {
+                    summary.empties += 1
+                    skipReasons[it.skipSignature ?? "decoded-but-no-detectable-kind", default: 0] += 1
+                    continue
+                }
                 let created = it.createdAt ?? Date()
                 let m = ClipItem.make(from: snap, kind: kind, now: created, ttl: 0)
                 let item = ClipItem(
@@ -91,7 +100,35 @@ public enum PasteImporter {
                 try await store.upsert(item)
             }
         }
+        summary.logPath = writeLog(summary: summary, totalItems: items.count,
+                                   skipReasons: skipReasons, near: filesDir)
         return summary
+    }
+
+    /// Write a diagnostics log next to the store when items were skipped, so an unsupported
+    /// format self-reports (a histogram of skip signatures — the `prefix=…` bytes of any
+    /// blob we couldn't decode). Returns the path, or nil if there was nothing to report.
+    private static func writeLog(summary: PasteImportSummary, totalItems: Int,
+                                 skipReasons: [String: Int], near filesDir: URL) -> String? {
+        guard !skipReasons.isEmpty else { return nil }
+        let df = ISO8601DateFormatter()
+        var out = """
+            Prosciutto — Paste migration log
+            \(df.string(from: Date()))
+            total items: \(totalItems)
+            imported: \(summary.imported)   already present: \(summary.alreadyPresent)
+            skipped (no importable content): \(summary.empties)   files whose original is gone: \(summary.missingFiles)
+
+            Skip breakdown (signature × count) — an unfamiliar `prefix=…` means a Paste
+            format we don't decode yet; share this file to get it added:
+
+            """
+        for (sig, n) in skipReasons.sorted(by: { $0.value > $1.value }) {
+            out += "  \(n)\t\(sig)\n"
+        }
+        let url = filesDir.deletingLastPathComponent().appendingPathComponent("paste-migration.log")
+        try? out.write(to: url, atomically: true, encoding: .utf8)
+        return (try? url.checkResourceIsReachable()) == true ? url.path : nil
     }
 
     // MARK: helpers

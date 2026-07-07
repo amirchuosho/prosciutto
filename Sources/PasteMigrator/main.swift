@@ -45,6 +45,7 @@ do {
         \(s.missingFiles > 0 ? ", \(s.missingFiles) files whose originals are gone" : "").
           \(s.sectionsCreated) section(s) created.\(dryRun ? "  (throwaway store — nothing changed)" : "  Launch Prosciutto to see them.")
         """)
+    if let log = s.logPath { print("  skip-breakdown log: \(log)") }
 } catch {
     fail("\(error)")
 }
