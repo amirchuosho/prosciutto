@@ -39,10 +39,11 @@ extension AppEnvironment {
             + (s.sectionsCreated > 0 ? " into \(s.sectionsCreated) new pinboard\(s.sectionsCreated == 1 ? "" : "s")" : "")
             + "."]
         if s.alreadyPresent > 0 { lines.append("\(s.alreadyPresent) already present (skipped).") }
-        if s.empties > 0 { lines.append("\(s.empties) empty item\(s.empties == 1 ? "" : "s") skipped.") }
+        if s.empties > 0 { lines.append("\(s.empties) item\(s.empties == 1 ? "" : "s") had no importable content.") }
         if s.missingFiles > 0 {
             lines.append("\(s.missingFiles) file\(s.missingFiles == 1 ? "" : "s") couldn't be copied (original moved or deleted).")
         }
+        if let log = s.logPath { lines.append("\nDetails: \(log)") }
         return lines.joined(separator: "\n")
     }
 

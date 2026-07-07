@@ -26,6 +26,9 @@ public struct PasteItem: Sendable {
     public let sourceBundleID: String?
     public let sourceAppName: String?
     public let dataByType: [String: Data]   // UTI → bytes
+    /// Why this item's data couldn't be decoded (nil if it decoded fine). Surfaced in the
+    /// migration log so a future format change self-reports instead of needing DB spelunking.
+    public let skipSignature: String?
 }
 
 private let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
@@ -187,62 +190,110 @@ public final class PasteReader {
             let created: Date? = sqlite3_column_type(st, 6) == SQLITE_NULL
                 ? nil : Date(timeIntervalSinceReferenceDate: sqlite3_column_double(st, 6))
             let blob = blobData(st, 7)
-            let dbt = blob.map { decode($0) } ?? [:]
+            let decoded = blob.map { decode($0) }
             out.append(PasteItem(pk: pk, listPk: listPk, order: order, rawType: raw,
                                  title: title, identifier: ident, createdAt: created,
                                  sourceBundleID: text(st, 8), sourceAppName: text(st, 9),
-                                 dataByType: dbt))
+                                 dataByType: decoded?.dbt ?? [:],
+                                 skipSignature: blob == nil ? "no-data-row" : decoded?.skip))
         }
         return out
     }
 
     // MARK: blob → dataByType
 
-    private func decode(_ blob: Data) -> [String: Data] {
-        guard let flag = blob.first else { return [:] }
-        let bpl: Data
+    /// Returns the decoded UTI→bytes map and, when nothing decoded, a short `skip` signature
+    /// describing why (missing external file, unknown storage flag, or the payload's leading
+    /// bytes) — so the migration log pinpoints an unsupported format without needing the DB.
+    private func decode(_ blob: Data) -> (dbt: [String: Data], skip: String?) {
+        guard let flag = blob.first else { return ([:], "empty-blob") }
+        let payload: Data
         switch flag {
         case 1:
-            bpl = blob.subdata(in: 1..<blob.count)
+            payload = blob.subdata(in: 1..<blob.count)
         case 2:
             let end = min(37, blob.count)
             let uuid = String(data: blob.subdata(in: 1..<end), encoding: .ascii)?
                 .trimmingCharacters(in: CharacterSet(charactersIn: "\0")) ?? ""
-            guard !uuid.isEmpty,
-                  let ext = try? Data(contentsOf: externalDir.appendingPathComponent(uuid))
-            else { return [:] }
-            bpl = ext
+            guard !uuid.isEmpty else { return ([:], "external-ref-malformed") }
+            guard let ext = try? Data(contentsOf: externalDir.appendingPathComponent(uuid))
+            else { return ([:], "external-file-missing") }
+            payload = ext
         default:
-            return [:]
+            return ([:], "unknown-storage-flag-\(flag)")
         }
-        // Paste stores some (larger) pasteboard payloads LZFSE-compressed — the bplist is
-        // wrapped in an LZFSE frame ("bvx…" magic). Inflate before parsing.
-        let plist = Self.inflateLZFSE(bpl) ?? bpl
-        guard let obj = try? PropertyListSerialization.propertyList(from: plist, options: [], format: nil)
-        else { return [:] }
-        let dict: [String: Any]?
-        if let arr = obj as? [[String: Any]] { dict = arr.first }
-        else { dict = obj as? [String: Any] }
-        guard let dbt = dict?["dataByType"] as? [String: Any] else { return [:] }
-        var out: [String: Data] = [:]
-        for (k, v) in dbt where v is Data { out[k] = (v as! Data) }
-        return out
+        let dbt = Self.parseEnvelope(payload)
+        guard dbt.isEmpty else { return (dbt, nil) }
+        let head = payload.prefix(8).map { String(format: "%02x", $0) }.joined()
+        return ([:], "undecodable-payload prefix=\(head)")
     }
 
-    /// Inflate an LZFSE frame (Apple's Compression framework). Returns nil if `data` isn't
-    /// LZFSE-compressed (frames start with the "bvx" magic) or can't be decoded.
-    static func inflateLZFSE(_ data: Data) -> Data? {
-        guard data.count > 4, Array(data.prefix(3)) == [0x62, 0x76, 0x78] else { return nil }
+    /// Every Apple Compression algorithm — so whatever a Paste build compresses with, we can
+    /// inflate it. A skipped item should be a last resort, never a format we simply didn't try.
+    private static let algorithms: [compression_algorithm] = [
+        COMPRESSION_ZLIB, COMPRESSION_LZFSE, COMPRESSION_LZMA,
+        COMPRESSION_LZ4_RAW, COMPRESSION_LZ4, COMPRESSION_LZBITMAP, COMPRESSION_BROTLI,
+    ]
+
+    /// A pasteboard payload is `[{ "types": [...], "dataByType": { UTI: <bytes|base64> } }]`.
+    /// Paste serializes it as a **bplist** (older/direct) or **JSON** (newer/Setapp/synced),
+    /// and either may be **compressed** with any Apple algorithm. Try the plain encodings,
+    /// then inflate with each algorithm and re-parse; accept only a result that yields a valid
+    /// envelope (self-validating — a wrong algorithm can't fake a plist/JSON with `dataByType`).
+    /// Returns the UTI→bytes map (empty only if truly nothing decodes).
+    static func parseEnvelope(_ data: Data) -> [String: Data] {
+        if let d = dataByType(fromPlist: data) { return d }
+        if let d = dataByType(fromJSON: data) { return d }
+        for algo in algorithms {
+            guard let inflated = inflate(data, algo) else { continue }
+            if let d = dataByType(fromPlist: inflated) ?? dataByType(fromJSON: inflated) { return d }
+        }
+        return [:]
+    }
+
+    private static func dataByType(fromPlist data: Data) -> [String: Data]? {
+        guard let obj = try? PropertyListSerialization.propertyList(from: data, options: [], format: nil)
+        else { return nil }
+        return dataByType(fromObject: obj, base64Strings: false)
+    }
+
+    private static func dataByType(fromJSON data: Data) -> [String: Data]? {
+        guard let first = data.first, first == 0x5B || first == 0x7B,   // '[' or '{'
+              let obj = try? JSONSerialization.jsonObject(with: data) else { return nil }
+        return dataByType(fromObject: obj, base64Strings: true)
+    }
+
+    /// Pull `dataByType` out of the decoded object (array-of-one-dict, or a bare dict). In
+    /// JSON, byte values arrive as base64 strings (Swift `JSONEncoder`'s default for `Data`);
+    /// if a value is a plain string that isn't base64, fall back to its UTF-8 bytes.
+    private static func dataByType(fromObject obj: Any, base64Strings: Bool) -> [String: Data]? {
+        let dict: [String: Any]? = (obj as? [[String: Any]])?.first ?? (obj as? [String: Any])
+        guard let dbt = dict?["dataByType"] as? [String: Any] else { return nil }
+        var out: [String: Data] = [:]
+        for (k, v) in dbt {
+            if let d = v as? Data { out[k] = d }
+            else if let s = v as? String {
+                out[k] = (base64Strings ? Data(base64Encoded: s) : nil) ?? Data(s.utf8)
+            }
+        }
+        return out.isEmpty ? nil : out
+    }
+
+    /// Inflate with a given Apple Compression algorithm. No magic sniffing — the caller
+    /// re-parses and validates the output, so a wrong algorithm just yields nil/garbage that
+    /// fails to parse. Grows the output buffer until it fits.
+    static func inflate(_ data: Data, _ algorithm: compression_algorithm) -> Data? {
+        guard !data.isEmpty else { return nil }
         var capacity = max(data.count * 8, 1 << 16)
-        for _ in 0..<6 {
+        for _ in 0..<8 {
             let dst = UnsafeMutablePointer<UInt8>.allocate(capacity: capacity)
             defer { dst.deallocate() }
             let n = data.withUnsafeBytes { raw -> Int in
                 guard let base = raw.bindMemory(to: UInt8.self).baseAddress else { return 0 }
-                return compression_decode_buffer(dst, capacity, base, data.count, nil, COMPRESSION_LZFSE)
+                return compression_decode_buffer(dst, capacity, base, data.count, nil, algorithm)
             }
             if n > 0 && n < capacity { return Data(bytes: dst, count: n) }
-            if n == capacity { capacity *= 2; continue }   // output was truncated → grow + retry
+            if n == capacity { capacity *= 2; continue }   // output truncated → grow + retry
             return nil
         }
         return nil
