@@ -7,11 +7,8 @@ extension AppEnvironment {
             .appendingPathComponent("Prosciutto/imported-files", isDirectory: true)
     }
 
-    /// True if a Paste install with a store is present — used to show/hide the menu item.
-    var pasteIsInstalled: Bool {
-        FileManager.default.fileExists(atPath:
-            PasteReader.defaultStoreDir.appendingPathComponent("db.sqlite").path)
-    }
+    /// True if a Paste store is present (any distribution) — gates the menu.
+    var pasteIsInstalled: Bool { PasteReader.locatePasteDB() != nil }
 
     /// Menu action: migrate a Paste install's clips + pinboards into Prosciutto. Safe to run
     /// repeatedly — the importer dedups by content hash.

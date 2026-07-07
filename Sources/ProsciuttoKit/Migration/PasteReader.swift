@@ -37,9 +37,82 @@ public final class PasteReader {
     private var db: OpaquePointer?
     private let externalDir: URL
 
-    /// Default location of a Paste install's store on this Mac.
-    public static let defaultStoreDir = URL(fileURLWithPath:
-        ("~/Library/Application Support/com.wiheads.paste-direct" as NSString).expandingTildeInPath)
+    private static let cachedDB: URL? = findPasteDB()
+
+    /// The Paste store's DB file on this Mac, auto-detected across ALL distributions
+    /// (direct download, Mac App Store/sandboxed, Setapp). The file can be named anything and
+    /// live anywhere, so we identify it by SCHEMA — any `*.sqlite` with Paste's `ZITEMENTITY`
+    /// table — never by name or path. Result is cached (scan is a bit expensive).
+    public static func locatePasteDB() -> URL? { cachedDB }
+
+    private static func findPasteDB() -> URL? {
+        let fm = FileManager.default
+        let home = fm.homeDirectoryForCurrentUser
+        // (root, maxDepth) — where different Paste distributions keep their store.
+        var roots: [(URL, Int)] = [
+            (home.appendingPathComponent("Library/Application Support"), 6),  // direct, Setapp (nested)
+            (home.appendingPathComponent("Library/Group Containers"), 5),
+        ]
+        // Mac App Store (sandboxed) builds live in a container. Only dip into containers
+        // whose name identifies Paste — scanning every app's container could trip macOS
+        // cross-app-data prompts, and Setapp/direct don't use containers anyway.
+        let containers = home.appendingPathComponent("Library/Containers")
+        for c in (try? fm.contentsOfDirectory(at: containers, includingPropertiesForKeys: nil)) ?? [] {
+            let n = c.lastPathComponent.lowercased()
+            if n.contains("paste") || n.contains("wiheads") {
+                roots.append((c.appendingPathComponent("Data/Library/Application Support"), 4))
+            }
+        }
+        var best: (URL, Int)?
+        for (root, depth) in roots {
+            for db in sqliteFiles(under: root, maxDepth: depth) {
+                guard let n = pasteItemCount(dbPath: db.path) else { continue }
+                if best == nil || n > best!.1 { best = (db, n) }
+            }
+        }
+        return best?.0
+    }
+
+    /// All `*.sqlite` files under `root`, bounded depth, silently skipping unreadable dirs.
+    private static func sqliteFiles(under root: URL, maxDepth: Int) -> [URL] {
+        let fm = FileManager.default
+        var out: [URL] = []
+        func walk(_ dir: URL, _ depth: Int) {
+            guard depth <= maxDepth,
+                  let entries = try? fm.contentsOfDirectory(
+                    at: dir, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles])
+            else { return }
+            for e in entries {
+                if (try? e.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true {
+                    walk(e, depth + 1)
+                } else if e.pathExtension.lowercased() == "sqlite" {
+                    out.append(e)
+                }
+            }
+        }
+        walk(root, 0)
+        return out
+    }
+
+    /// The Core Data external-binary dir that sits beside a store file
+    /// (`<stem>.sqlite` → `.<stem>_SUPPORT/_EXTERNAL_DATA`).
+    public static func externalDataDir(for db: URL) -> URL {
+        db.deletingLastPathComponent()
+            .appendingPathComponent(".\(db.deletingPathExtension().lastPathComponent)_SUPPORT/_EXTERNAL_DATA")
+    }
+
+    /// Open a candidate DB read-only and return its Paste item count, or nil if it isn't a
+    /// Paste store (no `ZITEMENTITY`). Cheap validation used by `locateStoreDir`.
+    static func pasteItemCount(dbPath: String) -> Int? {
+        var db: OpaquePointer?
+        guard sqlite3_open_v2(dbPath, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK else { return nil }
+        defer { sqlite3_close(db) }
+        var st: OpaquePointer?
+        guard sqlite3_prepare_v2(db, "SELECT COUNT(*) FROM ZITEMENTITY", -1, &st, nil) == SQLITE_OK
+        else { return nil }
+        defer { sqlite3_finalize(st) }
+        return sqlite3_step(st) == SQLITE_ROW ? Int(sqlite3_column_int64(st, 0)) : nil
+    }
 
     public init(dbPath: String, externalDir: URL) throws {
         self.externalDir = externalDir

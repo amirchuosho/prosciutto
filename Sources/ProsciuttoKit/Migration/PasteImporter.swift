@@ -16,22 +16,24 @@ public struct PasteImportSummary: Sendable, Equatable {
 /// and is self-contained.
 public enum PasteImporter {
 
-    /// Locate + open Paste's store at the default location, or nil if Paste isn't installed.
-    public static func makeReader(storeDir: URL = PasteReader.defaultStoreDir) throws -> PasteReader? {
-        let dbPath = storeDir.appendingPathComponent("db.sqlite").path
-        guard FileManager.default.fileExists(atPath: dbPath) else { return nil }
+    /// Locate + open Paste's store (auto-detecting the distribution), or nil if Paste isn't
+    /// installed. Pass `storeDir` to override detection.
+    public static func makeReader(dbURL explicit: URL? = nil) throws -> PasteReader? {
+        guard let db = explicit ?? PasteReader.locatePasteDB() else { return nil }
+        guard FileManager.default.fileExists(atPath: db.path) else { return nil }
+        let name = db.lastPathComponent
         // Copy the DB (+ wal/shm) to temp so a running Paste isn't disturbed.
         let tmp = URL(fileURLWithPath: NSTemporaryDirectory())
             .appendingPathComponent("pastemig-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
         for s in ["", "-wal", "-shm"] {
-            let src = dbPath + s
+            let src = db.path + s
             if FileManager.default.fileExists(atPath: src) {
-                try? FileManager.default.copyItem(atPath: src, toPath: tmp.appendingPathComponent("db.sqlite" + s).path)
+                try? FileManager.default.copyItem(atPath: src, toPath: tmp.appendingPathComponent(name + s).path)
             }
         }
-        let external = storeDir.appendingPathComponent(".db_SUPPORT/_EXTERNAL_DATA")
-        return try PasteReader(dbPath: tmp.appendingPathComponent("db.sqlite").path, externalDir: external)
+        return try PasteReader(dbPath: tmp.appendingPathComponent(name).path,
+                               externalDir: PasteReader.externalDataDir(for: db))
     }
 
     /// Read everything from `reader` and write it into `store`. Idempotent (deterministic ids
