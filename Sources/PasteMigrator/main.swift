@@ -17,13 +17,13 @@ func opt(_ n: String) -> String? {
 func fail(_ m: String) -> Never { FileHandle.standardError.write(Data("✗ \(m)\n".utf8)); exit(1) }
 
 let appPath = opt("--app") ?? "/Applications/Prosciutto.app"
-let pasteDir = URL(fileURLWithPath: opt("--paste-dir") ?? PasteReader.defaultStoreDir.path)
+let pasteDB = opt("--paste-db").map { URL(fileURLWithPath: $0) }
 let prosciuttoSupport = URL(fileURLWithPath:
     ("~/Library/Application Support/Prosciutto" as NSString).expandingTildeInPath)
 
 do {
-    guard let reader = try PasteImporter.makeReader(storeDir: pasteDir) else {
-        fail("Paste store not found at \(pasteDir.path) — is Paste installed?")
+    guard let reader = try PasteImporter.makeReader(dbURL: pasteDB) else {
+        fail("No Paste store found — is Paste installed? (scanned for any Paste DB by schema)")
     }
     let store: ClipStore
     let filesDir: URL
