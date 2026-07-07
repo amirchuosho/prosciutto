@@ -200,10 +200,10 @@ public final class PasteReader {
 
     private func decode(_ blob: Data) -> [String: Data] {
         guard let flag = blob.first else { return [:] }
-        let bpl: Data
+        let payload: Data
         switch flag {
         case 1:
-            bpl = blob.subdata(in: 1..<blob.count)
+            payload = blob.subdata(in: 1..<blob.count)
         case 2:
             let end = min(37, blob.count)
             let uuid = String(data: blob.subdata(in: 1..<end), encoding: .ascii)?
@@ -211,38 +211,73 @@ public final class PasteReader {
             guard !uuid.isEmpty,
                   let ext = try? Data(contentsOf: externalDir.appendingPathComponent(uuid))
             else { return [:] }
-            bpl = ext
+            payload = ext
         default:
             return [:]
         }
-        // Paste stores some (larger) pasteboard payloads LZFSE-compressed — the bplist is
-        // wrapped in an LZFSE frame ("bvx…" magic). Inflate before parsing.
-        let plist = Self.inflateLZFSE(bpl) ?? bpl
-        guard let obj = try? PropertyListSerialization.propertyList(from: plist, options: [], format: nil)
-        else { return [:] }
-        let dict: [String: Any]?
-        if let arr = obj as? [[String: Any]] { dict = arr.first }
-        else { dict = obj as? [String: Any] }
-        guard let dbt = dict?["dataByType"] as? [String: Any] else { return [:] }
-        var out: [String: Data] = [:]
-        for (k, v) in dbt where v is Data { out[k] = (v as! Data) }
-        return out
+        return Self.parseEnvelope(payload)
     }
 
-    /// Inflate an LZFSE frame (Apple's Compression framework). Returns nil if `data` isn't
-    /// LZFSE-compressed (frames start with the "bvx" magic) or can't be decoded.
-    static func inflateLZFSE(_ data: Data) -> Data? {
-        guard data.count > 4, Array(data.prefix(3)) == [0x62, 0x76, 0x78] else { return nil }
+    /// A pasteboard payload is `[{ "types": [...], "dataByType": { UTI: <bytes|base64> } }]`.
+    /// Paste serializes it as a **bplist** (older/direct) or **JSON** (newer/Setapp/synced),
+    /// and either may be compressed — LZFSE-framed, or raw DEFLATE. Try the plain encodings,
+    /// then decompress and retry. Returns the UTI→bytes map (empty if nothing decodes).
+    static func parseEnvelope(_ data: Data) -> [String: Data] {
+        if let d = dataByType(fromPlist: data) { return d }
+        if let d = dataByType(fromJSON: data) { return d }
+        // Compressed: LZFSE frame ("bvx"), or raw DEFLATE (Apple COMPRESSION_ZLIB — the
+        // JSON/bplist has no header, so we just attempt it). Re-parse the inflated bytes.
+        for inflated in [inflate(data, COMPRESSION_LZFSE, requireBVX: true),
+                         inflate(data, COMPRESSION_ZLIB, requireBVX: false)].compactMap({ $0 }) {
+            if let d = dataByType(fromPlist: inflated) ?? dataByType(fromJSON: inflated) { return d }
+        }
+        return [:]
+    }
+
+    private static func dataByType(fromPlist data: Data) -> [String: Data]? {
+        guard let obj = try? PropertyListSerialization.propertyList(from: data, options: [], format: nil)
+        else { return nil }
+        return dataByType(fromObject: obj, base64Strings: false)
+    }
+
+    private static func dataByType(fromJSON data: Data) -> [String: Data]? {
+        guard let first = data.first, first == 0x5B || first == 0x7B,   // '[' or '{'
+              let obj = try? JSONSerialization.jsonObject(with: data) else { return nil }
+        return dataByType(fromObject: obj, base64Strings: true)
+    }
+
+    /// Pull `dataByType` out of the decoded object (array-of-one-dict, or a bare dict). In
+    /// JSON, byte values arrive as base64 strings (Swift `JSONEncoder`'s default for `Data`);
+    /// if a value is a plain string that isn't base64, fall back to its UTF-8 bytes.
+    private static func dataByType(fromObject obj: Any, base64Strings: Bool) -> [String: Data]? {
+        let dict: [String: Any]? = (obj as? [[String: Any]])?.first ?? (obj as? [String: Any])
+        guard let dbt = dict?["dataByType"] as? [String: Any] else { return nil }
+        var out: [String: Data] = [:]
+        for (k, v) in dbt {
+            if let d = v as? Data { out[k] = d }
+            else if let s = v as? String {
+                out[k] = (base64Strings ? Data(base64Encoded: s) : nil) ?? Data(s.utf8)
+            }
+        }
+        return out.isEmpty ? nil : out
+    }
+
+    /// Inflate with an Apple Compression algorithm. For LZFSE we first require the "bvx"
+    /// frame magic (so we don't mis-decode arbitrary data); raw DEFLATE has no magic, so we
+    /// just attempt it and let the caller re-parse the result.
+    static func inflate(_ data: Data, _ algorithm: compression_algorithm, requireBVX: Bool) -> Data? {
+        if requireBVX { guard data.count > 4, Array(data.prefix(3)) == [0x62, 0x76, 0x78] else { return nil } }
+        guard !data.isEmpty else { return nil }
         var capacity = max(data.count * 8, 1 << 16)
-        for _ in 0..<6 {
+        for _ in 0..<8 {
             let dst = UnsafeMutablePointer<UInt8>.allocate(capacity: capacity)
             defer { dst.deallocate() }
             let n = data.withUnsafeBytes { raw -> Int in
                 guard let base = raw.bindMemory(to: UInt8.self).baseAddress else { return 0 }
-                return compression_decode_buffer(dst, capacity, base, data.count, nil, COMPRESSION_LZFSE)
+                return compression_decode_buffer(dst, capacity, base, data.count, nil, algorithm)
             }
             if n > 0 && n < capacity { return Data(bytes: dst, count: n) }
-            if n == capacity { capacity *= 2; continue }   // output was truncated → grow + retry
+            if n == capacity { capacity *= 2; continue }   // output truncated → grow + retry
             return nil
         }
         return nil
