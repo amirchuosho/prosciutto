@@ -1,5 +1,6 @@
 import Foundation
 import SQLite3
+import Compression
 
 public enum PasteMigrationError: Error, CustomStringConvertible {
     case msg(String)
@@ -214,7 +215,10 @@ public final class PasteReader {
         default:
             return [:]
         }
-        guard let obj = try? PropertyListSerialization.propertyList(from: bpl, options: [], format: nil)
+        // Paste stores some (larger) pasteboard payloads LZFSE-compressed — the bplist is
+        // wrapped in an LZFSE frame ("bvx…" magic). Inflate before parsing.
+        let plist = Self.inflateLZFSE(bpl) ?? bpl
+        guard let obj = try? PropertyListSerialization.propertyList(from: plist, options: [], format: nil)
         else { return [:] }
         let dict: [String: Any]?
         if let arr = obj as? [[String: Any]] { dict = arr.first }
@@ -223,6 +227,25 @@ public final class PasteReader {
         var out: [String: Data] = [:]
         for (k, v) in dbt where v is Data { out[k] = (v as! Data) }
         return out
+    }
+
+    /// Inflate an LZFSE frame (Apple's Compression framework). Returns nil if `data` isn't
+    /// LZFSE-compressed (frames start with the "bvx" magic) or can't be decoded.
+    static func inflateLZFSE(_ data: Data) -> Data? {
+        guard data.count > 4, Array(data.prefix(3)) == [0x62, 0x76, 0x78] else { return nil }
+        var capacity = max(data.count * 8, 1 << 16)
+        for _ in 0..<6 {
+            let dst = UnsafeMutablePointer<UInt8>.allocate(capacity: capacity)
+            defer { dst.deallocate() }
+            let n = data.withUnsafeBytes { raw -> Int in
+                guard let base = raw.bindMemory(to: UInt8.self).baseAddress else { return 0 }
+                return compression_decode_buffer(dst, capacity, base, data.count, nil, COMPRESSION_LZFSE)
+            }
+            if n > 0 && n < capacity { return Data(bytes: dst, count: n) }
+            if n == capacity { capacity *= 2; continue }   // output was truncated → grow + retry
+            return nil
+        }
+        return nil
     }
 
     // MARK: sqlite helpers
