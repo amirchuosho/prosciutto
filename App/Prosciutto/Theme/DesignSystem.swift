@@ -23,7 +23,7 @@ enum DS {
         static let width: CGFloat = 236
         static let height: CGFloat = 300
         static let header: CGFloat = 62
-        static let appIcon: CGFloat = 30
+        static let appIcon: CGFloat = 44
     }
 
     enum Typeface {
