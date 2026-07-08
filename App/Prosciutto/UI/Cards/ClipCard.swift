@@ -83,6 +83,15 @@ struct ClipCard: View {
         .onChange(of: isHovered) { _, h in
             if !h { withAnimation(.spring(response: 0.3, dampingFraction: 0.78)) { pickingSlot = false } }
         }
+        // Editing selects the card, so if the selection moves away (e.g. clicking another
+        // tile) the field lost focus even though AppKit didn't resign it — commit the
+        // edit so it doesn't linger and swallow the next keystroke.
+        .onChange(of: isSelected) { _, selected in
+            if !selected {
+                if editingTitle { commitTitle() }
+                if editingBody { commitBodyEdit() }
+            }
+        }
         // A card can be torn down mid-edit — LazyHStack recycling it off-screen, a
         // filter/section change removing it, or a reload after a new capture. Its
         // local editing @State vanishes with the view, but `vm.isEditingTitle` (the
@@ -162,10 +171,16 @@ struct ClipCard: View {
     }
 
     private func startTitleEdit() {
+        // Committing the body tears its editor down this runloop; setting focus in the
+        // same pass is dropped mid-transition (field shows no cursor). Defer it one hop
+        // so the title field exists first.
+        let deferFocus = editingBody
+        if editingBody { commitBodyEdit() }   // one editor at a time
         titleDraft = item.title ?? ""
         editingTitle = true
-        titleFocused = true
         onEditingChanged(true)
+        if deferFocus { DispatchQueue.main.async { titleFocused = true } }
+        else { titleFocused = true }
     }
 
     private func commitTitle() {
@@ -415,12 +430,16 @@ struct ClipCard: View {
     }
 
     func startBodyEdit() {
+        let deferFocus = editingTitle
+        if editingTitle { commitTitle() }   // one editor at a time
         bodyDraft = item.textPlain ?? ""
         editingBody = true
-        bodyFocused = true
         onEditingChanged(true)
+        if deferFocus { DispatchQueue.main.async { bodyFocused = true } }
+        else { bodyFocused = true }
     }
     private func commitBodyEdit() {
+        guard editingBody else { return }   // idempotent: multiple commit paths must not re-fire onEditBody
         editingBody = false
         onEditingChanged(false)
         onEditBody(bodyDraft)

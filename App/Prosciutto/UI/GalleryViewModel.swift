@@ -132,8 +132,14 @@ final class GalleryViewModel: ObservableObject {
     /// laid out and the tap landing. Also syncs `selection` so keyboard nav resumes
     /// from the clicked card.
     func paste(_ item: ClipItem, asPlainText: Bool = false) {
-        if let i = filtered().firstIndex(where: { $0.id == item.id }) { selection = i }
+        select(item)
         onPaste(item, asPlainText)
+    }
+
+    /// Move the selection to a specific clip by identity (e.g. when its title/body edit
+    /// starts), so keyboard actions act on it rather than a stale selection elsewhere.
+    func select(_ item: ClipItem) {
+        if let i = filtered().firstIndex(where: { $0.id == item.id }) { selection = i }
     }
 
     /// Pinned cards in slot order. The slot a card occupies (its ⌘-number) is its
@@ -209,9 +215,17 @@ final class GalleryViewModel: ObservableObject {
         return (t?.isEmpty == false) ? t : nil
     }
 
+    /// The latest known version of a clip (from the last reload), falling back to the
+    /// passed-in copy. Edits apply their change onto THIS rather than a stale render-time
+    /// snapshot, so a title edit and a body edit committed in turn don't clobber each
+    /// other by each writing back the whole item with its own field only.
+    private func current(_ item: ClipItem) -> ClipItem {
+        items.first(where: { $0.id == item.id }) ?? item
+    }
+
     /// Set just the custom title (any kind, including images/files).
     func setTitle(_ item: ClipItem, _ title: String?) async {
-        var updated = item
+        var updated = current(item)
         updated.title = cleaned(title)
         try? await store.update(updated)
         await reload()
@@ -231,7 +245,7 @@ final class GalleryViewModel: ObservableObject {
 
     /// Edit body text (title preserved); recomputes the content hash.
     func updateText(_ item: ClipItem, newText: String) async {
-        var updated = item
+        var updated = current(item)
         updated.textPlain = newText
         updated.rtfData = nil
         updated.htmlString = nil
