@@ -226,10 +226,10 @@ struct ClipCard: View {
             Image(nsImage: icon)
                 .resizable()
                 .frame(width: DS.CardSize.appIcon, height: DS.CardSize.appIcon)
-                .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: DS.Radius.control, style: .continuous))
                 .shadow(color: .black.opacity(0.28), radius: 2, y: 1)
         } else {
-            Image(systemName: style.icon).font(.system(size: 15, weight: .bold))
+            Image(systemName: style.icon).font(.system(size: 20, weight: .bold))
                 .foregroundStyle(onBand.opacity(0.85))
                 .frame(width: DS.CardSize.appIcon, height: DS.CardSize.appIcon)
         }
