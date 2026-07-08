@@ -188,6 +188,9 @@ final class AppEnvironment: ObservableObject {
                 if mods == .command, event.keyCode == 51 {                // ⌘⌫ delete
                     Task { await self.vm.deleteSelected() }; return nil
                 }
+                if mods == .command, event.keyCode == 6 {                 // ⌘Z undo delete
+                    Task { await self.vm.undoDelete() }; return nil
+                }
                 return event
             }
 
