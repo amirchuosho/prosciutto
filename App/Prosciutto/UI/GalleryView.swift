@@ -50,6 +50,10 @@ struct GalleryView: View {
         // edge. Because the clip is at the panel (not the strip edge), the end cards'
         // glow has the full padding to breathe and is never cropped.
         .clipShape(RoundedRectangle(cornerRadius: DS.Radius.panel, style: .continuous))
+        // Pin the panel to the bottom of its (slightly taller, see heightSafetyMargin)
+        // window so the safety margin is transparent space above the panel, never a gap
+        // below it — the strip stays flush at the screen's bottom edge.
+        .frame(maxHeight: .infinity, alignment: .bottom)
         .tint(theme.accent)
         .preferredColorScheme(theme.colorScheme)
         .onAppear { searchFocused = true }
@@ -276,7 +280,12 @@ struct GalleryView: View {
                                  onRename: { newTitle in Task { await model.setTitle(item, newTitle) } },
                                  onEditBody: { newText in Task { await model.updateText(item, newText: newText) } },
                                  onAssignSlot: { n in Task { await model.assignSlot(item, slot: n) } },
-                                 onEditingChanged: { model.isEditingTitle = $0 },
+                                 // Select the card being edited, so keyboard delete/paste
+                                 // target it and not a stale selection on another tile.
+                                 onEditingChanged: { editing in
+                                     model.isEditingTitle = editing
+                                     if editing { model.select(item) }
+                                 },
                                  onEditMedia: { model.editMedia(item) },
                                  onCropMedia: { model.cropMedia(item) },
                                  isHovered: hoveredID == item.id)
@@ -288,7 +297,11 @@ struct GalleryView: View {
                             })
                             .transition(.scale(scale: 0.9).combined(with: .opacity))
                             .draggable(item.id.uuidString) { dragPreview(item) }
-                            .onTapGesture { model.paste(item) }
+                            // First click highlights; a click on the already-selected card pastes.
+                            .onTapGesture {
+                                if idx == model.selection { model.paste(item) }
+                                else { model.selection = idx }
+                            }
                             .contextMenu { cardMenu(item) }
                     }
                 }

@@ -70,6 +70,12 @@ final class GalleryPanel: NSObject {
     /// Used only if the hosting view can't yet produce a real fitting size (measured
     /// before first layout) — a reasonable strip height so the panel is never zero-sized.
     private static let fallbackContentHeight: CGFloat = 452
+    /// `NSHostingView.fittingSize` under-reports the content's true height by a couple of
+    /// points (it doesn't fully account for text descent). Sizing the window to exactly
+    /// that compresses the content and clips title descenders, so add a small safety
+    /// margin. The content is bottom-pinned (see GalleryView), so this extra height is
+    /// transparent space ABOVE the panel — it never floats the panel off the bottom.
+    private static let heightSafetyMargin: CGFloat = 8
 
     /// The strip's real content height, measured from the SwiftUI hosting view at the
     /// target width — so the window is sized to what's actually drawn, with no hardcoded
@@ -80,7 +86,7 @@ final class GalleryPanel: NSObject {
         host.setFrameSize(NSSize(width: width, height: host.frame.height))
         host.layoutSubtreeIfNeeded()
         let h = host.fittingSize.height
-        return h > 1 ? h : Self.fallbackContentHeight
+        return (h > 1 ? h.rounded(.up) : Self.fallbackContentHeight) + Self.heightSafetyMargin
     }
 
     private func targetFrame() -> NSRect? {
