@@ -21,8 +21,12 @@ final class GalleryPanel: NSObject {
                              styleMask: [.borderless, .nonactivatingPanel],
                              backing: .buffered, defer: true)
         super.init()
-        panel.level = .popUpMenu                       // above floating windows / most apps
         panel.isFloatingPanel = true
+        // Level MUST be set after `isFloatingPanel`, which otherwise forces it back to
+        // `.floating` (3) — below the Dock (20), so the strip rendered *behind* a visible
+        // Dock. `.popUpMenu` (101) sits above the Dock, covering it while the strip is up
+        // (like Paste), matching the strip now anchoring to the true screen bottom.
+        panel.level = .popUpMenu
         panel.hidesOnDeactivate = false
         panel.backgroundColor = .clear
         panel.isOpaque = false
@@ -54,13 +58,48 @@ final class GalleryPanel: NSObject {
     /// rather than firing over the Settings window too.
     func owns(_ window: NSWindow?) -> Bool { window === panel }
 
+    /// The screen to show on: the one under the cursor (where the user is looking),
+    /// falling back to the key/main screen, then the primary. Keeps the strip on the
+    /// active display in multi-monitor setups instead of always the main one.
+    private func activeScreen() -> NSScreen? {
+        let mouse = NSEvent.mouseLocation
+        return NSScreen.screens.first { NSMouseInRect(mouse, $0.frame, false) }
+            ?? NSScreen.main ?? NSScreen.screens.first
+    }
+
+    /// Used only if the hosting view can't yet produce a real fitting size (measured
+    /// before first layout) — a reasonable strip height so the panel is never zero-sized.
+    private static let fallbackContentHeight: CGFloat = 452
+
+    /// The strip's real content height, measured from the SwiftUI hosting view at the
+    /// target width — so the window is sized to what's actually drawn, with no hardcoded
+    /// height that drifts across machines/fonts. Falls back to a sane value if layout
+    /// hasn't produced a size yet.
+    private func measuredContentHeight(forWidth width: CGFloat) -> CGFloat {
+        guard let host = panel.contentView else { return Self.fallbackContentHeight }
+        host.setFrameSize(NSSize(width: width, height: host.frame.height))
+        host.layoutSubtreeIfNeeded()
+        let h = host.fittingSize.height
+        return h > 1 ? h : Self.fallbackContentHeight
+    }
+
     private func targetFrame() -> NSRect? {
-        guard let screen = NSScreen.main else { return nil }
+        guard let screen = activeScreen() else { return nil }
         let margin: CGFloat = 18
-        let height: CGFloat = 464
-        let v = screen.visibleFrame
-        return NSRect(x: v.minX + margin, y: v.minY + margin,
-                      width: v.width - margin * 2, height: height)
+        let width = screen.frame.width - margin * 2
+        let contentHeight = measuredContentHeight(forWidth: width)
+        return Self.panelFrame(inScreen: screen.frame, contentHeight: contentHeight, margin: margin)
+    }
+
+    /// Pure geometry: the strip's frame within a screen. Anchored to the screen's TRUE
+    /// bottom edge (over the dock, like Paste) — NOT the visible frame, which would
+    /// float it above the dock. Sized to the real content height (no magic number),
+    /// clamped so it always fits even on a tiny display.
+    static func panelFrame(inScreen screen: NSRect, contentHeight: CGFloat,
+                           margin: CGFloat) -> NSRect {
+        let height = min(contentHeight, screen.height - margin * 2)
+        return NSRect(x: screen.minX + margin, y: screen.minY + margin,
+                      width: screen.width - margin * 2, height: height)
     }
 
     /// Off-screen below the bottom edge — the panel slides up from / down to here.

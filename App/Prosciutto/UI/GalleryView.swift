@@ -43,6 +43,13 @@ struct GalleryView: View {
         }
         .padding(18)
         .background(panelBackground)
+        // Clip everything to the panel's rounded rect. The horizontal scroll strip uses
+        // `scrollClipDisabled` so the selected tile's scale/glow can overflow the strip
+        // frame — this panel clip is what then contains that overflow (and any card
+        // scrolled to an edge) inside the panel, instead of letting it bleed past the
+        // edge. Because the clip is at the panel (not the strip edge), the end cards'
+        // glow has the full padding to breathe and is never cropped.
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.panel, style: .continuous))
         .tint(theme.accent)
         .preferredColorScheme(theme.colorScheme)
         .onAppear { searchFocused = true }
@@ -285,7 +292,12 @@ struct GalleryView: View {
                             .contextMenu { cardMenu(item) }
                     }
                 }
-                .padding(.horizontal, DS.Space.lg).padding(.vertical, DS.Space.lg)
+                // Vertical padding only. The HORIZONTAL end spacing is applied as a
+                // scroll content margin (below), NOT padding — padding gets scrolled
+                // off by `scrollTo(anchor: .leading)`, slamming the first/last card
+                // flush against the panel edge. A content margin is respected by the
+                // scroll's rest position, so the end cards keep their gap.
+                .padding(.vertical, DS.Space.lg)
                 .animation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.82),
                            value: model.items)
                 // Rebuild the strip when the theme changes so cards render directly
@@ -319,6 +331,13 @@ struct GalleryView: View {
                     }
                 )
             }
+            // End spacing that survives `scrollTo` (see the padding note above): the
+            // first/last card rests DS.Space.lg from the edge. A content margin (not
+            // padding) is respected by the scroll's rest position, so `scrollTo` can't
+            // slam the end card flush against the edge.
+            .contentMargins(.horizontal, DS.Space.lg, for: .scrollContent)
+            // Let the selected tile's scale/glow overflow the strip frame; the panel-level
+            // clip (see body) contains it inside the panel without cropping the glow.
             .scrollClipDisabled()
             .frame(height: DS.CardSize.height + 2 * DS.Space.lg)
             .onChange(of: model.selection) { _, _ in scrollToSelection(proxy) }
