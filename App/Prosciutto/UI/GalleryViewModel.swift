@@ -23,6 +23,10 @@ final class GalleryViewModel: ObservableObject {
 
     private let store: ClipStore
     private let sectionPalette = ["#F56B8C", "#5C8FFF", "#52CC85", "#FFAA5C", "#4ECDC8", "#C77DFF"]
+    /// Recently deleted clips, newest last, for ⌘Z undo. Capped so undoing stays
+    /// available without holding a session's worth of (possibly image-heavy) deletes.
+    private var deletedStack: [ClipItem] = []
+    private let maxUndo = 20
 
     /// Set by AppEnvironment. Hides the panel, restores the previous app, then synthesizes paste.
     var onPaste: (ClipItem, Bool) -> Void = { _, _ in }
@@ -217,6 +221,8 @@ final class GalleryViewModel: ObservableObject {
     }
 
     func delete(_ item: ClipItem) async {
+        deletedStack.append(item)                                   // remember for ⌘Z
+        if deletedStack.count > maxUndo { deletedStack.removeFirst() }
         try? await store.delete(id: item.id)
         await reload()
     }
@@ -225,6 +231,14 @@ final class GalleryViewModel: ObservableObject {
         let list = filtered()
         guard list.indices.contains(selection) else { return }
         await delete(list[selection])
+    }
+
+    /// Restore the most recently deleted clip (⌘Z), re-adding it and selecting it.
+    func undoDelete() async {
+        guard let item = deletedStack.popLast() else { return }
+        try? await store.upsert(item)
+        await reload()
+        select(item)
     }
 
     private func cleaned(_ title: String?) -> String? {
