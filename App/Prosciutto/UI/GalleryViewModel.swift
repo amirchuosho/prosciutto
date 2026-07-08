@@ -94,6 +94,23 @@ final class GalleryViewModel: ObservableObject {
         await reload()
     }
 
+    /// Reorder custom sections: move the dragged section to just before the one it was
+    /// dropped on, renumber `sortIndex`, and persist only the sections that moved. "All"
+    /// and "Pinned" aren't sections, so they're untouched and stay fixed at the front.
+    func moveSection(_ draggedID: UUID, before targetID: UUID) async {
+        guard draggedID != targetID,
+              let from = sections.firstIndex(where: { $0.id == draggedID }) else { return }
+        var arr = sections
+        let moved = arr.remove(at: from)
+        let insertAt = arr.firstIndex(where: { $0.id == targetID }) ?? arr.count
+        arr.insert(moved, at: insertAt)
+        for (i, var s) in arr.enumerated() where s.sortIndex != i {
+            s.sortIndex = i
+            try? await store.updateSection(s)
+        }
+        await reload()
+    }
+
     func moveSelection(_ delta: Int) {
         let count = filtered().count
         guard count > 0 else { return }

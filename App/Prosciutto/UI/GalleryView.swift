@@ -19,6 +19,8 @@ struct GalleryView: View {
     @State private var showingAddSection = false
     @State private var newSectionName = ""
     @State private var dropPulse: UUID?
+    /// The section chip a drag is currently hovering, highlighted as the drop target.
+    @State private var dropTarget: UUID?
     /// The single card currently under the pointer, computed from the cursor position
     /// against each card's frame — one tracker, so it can't miss enter/exit events.
     @State private var hoveredID: UUID?
@@ -99,16 +101,32 @@ struct GalleryView: View {
                                 color: color, active: model.sectionFilter == .section(section.id)) {
                         model.sectionFilter = .section(section.id)
                     }
-                    .scaleEffect(dropPulse == section.id ? 1.18 : 1)
-                    .animation(.spring(response: 0.3, dampingFraction: 0.5), value: dropPulse)
+                    // Grows a touch on drop (card filed) and while a drag hovers it as the
+                    // drop target, so it's clear which chip will receive the drop.
+                    .scaleEffect(dropPulse == section.id ? 1.18 : (dropTarget == section.id ? 1.1 : 1))
+                    .animation(.spring(response: 0.3, dampingFraction: 0.6), value: dropPulse)
+                    .animation(.spring(response: 0.3, dampingFraction: 0.6), value: dropTarget)
+                    // Drag a custom chip to reorder it (All/Pinned aren't draggable, so
+                    // they stay fixed at the front). Custom preview keeps it clean instead
+                    // of the default translucent snapshot.
+                    .draggable(section.id.uuidString) { sectionDragPreview(section.name, color) }
                     .dropDestination(for: String.self) { ids, _ in
+                        dropTarget = nil
                         guard let s = ids.first, let uuid = UUID(uuidString: s) else { return false }
+                        // A dropped section id reorders; anything else is a card being
+                        // filed into this section.
+                        if model.sections.contains(where: { $0.id == uuid }) {
+                            Task { await model.moveSection(uuid, before: section.id) }
+                            return true
+                        }
                         Task { await model.assignID(uuid, to: section.id) }
                         dropPulse = section.id
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
                             if dropPulse == section.id { dropPulse = nil }
                         }
                         return true
+                    } isTargeted: { targeted in
+                        dropTarget = targeted ? section.id : (dropTarget == section.id ? nil : dropTarget)
                     }
                     .contextMenu {
                         Button("Edit section…") { editingSection = section }
@@ -125,6 +143,8 @@ struct GalleryView: View {
                 .buttonStyle(.plain)
             }
             .padding(.horizontal, 2)
+            // Slide the chips to their new spots when the order changes.
+            .animation(.spring(response: 0.35, dampingFraction: 0.82), value: model.sections)
         }
     }
 
@@ -147,6 +167,18 @@ struct GalleryView: View {
             .overlay(Capsule().strokeBorder(active ? color.opacity(0.55) : .clear, lineWidth: 1))
         }
         .buttonStyle(.plain)
+    }
+
+    /// The tile shown under the cursor while dragging a section chip to reorder — a clean
+    /// filled capsule instead of the default translucent snapshot.
+    private func sectionDragPreview(_ name: String, _ color: Color) -> some View {
+        HStack(spacing: 6) {
+            Circle().fill(color).frame(width: 9, height: 9)
+            Text(name).font(DS.Font.sectionPill)
+        }
+        .foregroundStyle(Color.primary)
+        .padding(.horizontal, DS.Space.md).padding(.vertical, 7)
+        .background(color.opacity(0.9), in: Capsule())
     }
 
     // MARK: Background
