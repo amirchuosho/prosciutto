@@ -215,9 +215,12 @@ struct GalleryView: View {
                 HStack(spacing: 6) { ForEach(kinds, id: \.self) { filterPill($0) } }
             }
             Spacer(minLength: 0)
-            Text("⌘1–9 · ⏎ · esc")
-                .font(.system(size: 12, weight: .semibold, design: .rounded))
-                .foregroundStyle(.secondary)
+            HStack(spacing: 5) {
+                Text("while open").foregroundStyle(.tertiary)
+                Text("⌘1–9 · ⏎ · esc").foregroundStyle(.secondary)
+            }
+            .font(.system(size: 12, weight: .semibold, design: .rounded))
+            .help("These shortcuts work only while Prosciutto is open")
             Button { model.onDismiss() } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 13, weight: .bold))

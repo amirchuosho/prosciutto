@@ -273,7 +273,7 @@ struct ClipCard: View {
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
-        .help("Paste with ⌘\(index.map(String.init) ?? "") · click to change slot")
+        .help("⌘\(index.map(String.init) ?? "") pastes this while Prosciutto is open · click to change slot")
     }
 
     /// Circles 1…n (n = pinned count) fly out across the footer with a staggered
