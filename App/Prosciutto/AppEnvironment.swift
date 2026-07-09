@@ -1,6 +1,7 @@
 import SwiftUI
 import ProsciuttoKit
 import Carbon.HIToolbox
+import QuartzCore
 
 @MainActor
 final class AppEnvironment: ObservableObject {
@@ -28,6 +29,11 @@ final class AppEnvironment: ObservableObject {
     private var scrollAccum: CGFloat = 0   // trackpad delta accumulator (points per step)
 
     @Published var isPaused = false
+    /// Menu-bar ham pulse: 0 = idle, 1 = full pink. Eased 0→1→0 per capture. See `HamBarLabel`.
+    @Published var pulseLevel: CGFloat = 0
+    private var pulseTimer: Timer?
+    private var pulseStart: CFTimeInterval = 0
+    private static let pulseDuration: CFTimeInterval = 0.55
 
     private init() {
         let vm = GalleryViewModel(store: store)
@@ -85,6 +91,7 @@ final class AppEnvironment: ObservableObject {
         monitor.onCapture = { [weak self] in
             Task { @MainActor in
                 self?.playCaptureSound()
+                self?.pulseIcon()
                 if self?.panel.isVisible == true { await self?.vm.reload() }
             }
         }
@@ -288,6 +295,38 @@ final class AppEnvironment: ObservableObject {
     private func playCaptureSound() {
         guard Preferences.shared.captureSoundEnabled else { return }
         NSSound(named: Preferences.shared.captureSoundName)?.play()
+    }
+
+    /// Eases the ham through a pink pulse. A rapid second capture resets the start time,
+    /// so the envelope restarts rather than stacking timers.
+    private func pulseIcon() {
+        pulseStart = CACurrentMediaTime()
+        guard pulseTimer == nil else { return }
+        // ~60fps; each tick drives `pulseLevel`. See `HamBarLabel` for why we re-render.
+        pulseTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60, repeats: true) { [weak self] timer in
+            MainActor.assumeIsolated {
+                guard let self else { timer.invalidate(); return }
+                let elapsed = CACurrentMediaTime() - self.pulseStart
+                self.pulseLevel = Self.pulseEnvelope(elapsed)
+                if elapsed >= Self.pulseDuration {
+                    self.pulseLevel = 0
+                    timer.invalidate()
+                    self.pulseTimer = nil
+                }
+            }
+        }
+    }
+
+    /// 0→1→0 pulse shape: ease-in, hold at full pink, ease-out.
+    private static func pulseEnvelope(_ t: CFTimeInterval) -> CGFloat {
+        let attack = 0.15, hold = 0.12, release = 0.28
+        func smooth(_ x: Double) -> Double { let c = min(max(x, 0), 1); return c * c * (3 - 2 * c) }
+        if t < attack { return CGFloat(smooth(t / attack)) }
+        let t2 = t - attack
+        if t2 < hold { return 1 }
+        let t3 = t2 - hold
+        if t3 < release { return CGFloat(1 - smooth(t3 / release)) }
+        return 0
     }
 
     private func startPruneTimer() {
