@@ -11,7 +11,13 @@ final class GalleryViewModel: ObservableObject {
     @Published var sections: [ClipSection] = []
     @Published var sectionFilter: SectionFilter = .all
     @Published var query = ClipQuery()
-    @Published var selection: Int = 0
+    /// The image clip whose large preview is currently expanded (nil = no preview).
+    /// Any change of `selection` clears it (see below), so the preview is always
+    /// bound to the card the highlight sits on.
+    @Published var previewID: UUID?
+    @Published var selection: Int = 0 {
+        didSet { if oldValue != selection { previewID = nil } }   // leaving a card closes its preview
+    }
     /// Bumped each time the gallery (re)opens so the strip resets to the start —
     /// keeps the pinned tiles visible on the left even after a previous session
     /// scrolled far right. Kept separate from `selection` so navigating (which
@@ -37,6 +43,10 @@ final class GalleryViewModel: ObservableObject {
     var editMedia: (ClipItem) -> Void = { _ in }
     /// Set by AppEnvironment. Opens a recording in QuickTime and jumps to its Trim UI.
     var cropMedia: (ClipItem) -> Void = { _ in }
+    /// Set by AppEnvironment. Positions/hides the floating image preview: passed the
+    /// previewed clip's id and its on-screen frame (SwiftUI global coords), or nil to
+    /// hide. Driven by `previewID` + the strip's geometry (see GalleryView).
+    var onPreviewAnchor: ((UUID, CGRect)?) -> Void = { _ in }
 
     init(store: ClipStore) {
         self.store = store
@@ -124,6 +134,23 @@ final class GalleryViewModel: ObservableObject {
     func moveToStart() { selection = 0 }
     func moveToEnd() { selection = max(0, filtered().count - 1) }
 
+    /// The clip the highlight currently points at, resolved through the same
+    /// `filtered()` list every nav/paste action uses — nil if the list is empty.
+    var selectedItem: ClipItem? {
+        let list = filtered()
+        return list.indices.contains(selection) ? list[selection] : nil
+    }
+
+    /// Toggle the large image preview for the currently-selected card. No-op for a
+    /// non-image (or empty) selection. Returns true if it acted, so the key monitor
+    /// knows whether to swallow the Space key or let it fall through to search.
+    @discardableResult
+    func togglePreview() -> Bool {
+        guard let item = selectedItem, item.kind == .image else { return false }
+        previewID = (previewID == item.id) ? nil : item.id
+        return true
+    }
+
     /// Select the newest non-pinned clip (what the user most likely just copied),
     /// so each gallery open starts at the front instead of the last-paste spot.
     /// Falls back to the first item if everything is pinned / the list is empty.
@@ -142,9 +169,8 @@ final class GalleryViewModel: ObservableObject {
     }
 
     func pasteSelected(asPlainText: Bool = false) {
-        let list = filtered()
-        guard list.indices.contains(selection) else { return }
-        onPaste(list[selection], asPlainText)
+        guard let item = selectedItem else { return }
+        onPaste(item, asPlainText)
     }
 
     /// Paste a specific clip (what the user clicked), by identity — never by the
@@ -228,9 +254,8 @@ final class GalleryViewModel: ObservableObject {
     }
 
     func deleteSelected() async {
-        let list = filtered()
-        guard list.indices.contains(selection) else { return }
-        await delete(list[selection])
+        guard let item = selectedItem else { return }
+        await delete(item)
     }
 
     /// Restore the most recently deleted clip (⌘Z), re-adding it and selecting it.

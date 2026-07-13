@@ -52,6 +52,10 @@ final class GalleryPanel: NSObject {
 
     var hasSheet: Bool { panel.attachedSheet != nil }
     var isVisible: Bool { panel.isVisible }
+    /// The window's screen frame (AppKit coords, y-up). Borderless, so window == content
+    /// — used to convert a card's SwiftUI global frame into screen coords for the preview.
+    var windowFrame: NSRect { panel.frame }
+    var screen: NSScreen? { panel.screen }
 
     /// True when an event belongs to this panel's window — lets app-wide event
     /// monitors (e.g. the scroll-to-navigate monitor) scope themselves to the strip
