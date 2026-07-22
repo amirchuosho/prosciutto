@@ -39,9 +39,25 @@ public enum PasteImporter {
                                externalDir: PasteReader.externalDataDir(for: db))
     }
 
+    /// Spacing between successive imported items' `lastUsedAt`, so import order is
+    /// preserved without ties (Swift's sort isn't stable). Small enough that even a
+    /// huge history's oldest item stays within the retention window: 0.01s × 50k ≈ 8min.
+    static let importStagger: TimeInterval = 0.01
+
+    /// Timestamps for an imported clip. Keeps the ORIGINAL creation date (honest "added
+    /// X ago" display) but stamps `lastUsedAt` as just-used — staggered by import order
+    /// (`index` 0 = first/newest) — so a history full of months-old items isn't swept
+    /// away by recency-based `RetentionPolicy` the moment the 5-minute prune fires.
+    static func importTimestamps(originalCreatedAt: Date?, index: Int, now: Date)
+        -> (createdAt: Date, lastUsedAt: Date) {
+        (originalCreatedAt ?? now, now.addingTimeInterval(-Double(index) * importStagger))
+    }
+
     /// Read everything from `reader` and write it into `store`. Idempotent (deterministic ids
-    /// + content-hash dedup), so re-running is safe.
-    public static func run(reader: PasteReader, into store: ClipStore, filesDir: URL) async throws -> PasteImportSummary {
+    /// + content-hash dedup), so re-running is safe. `now` is the import time imported items
+    /// are marked as last-used at (injectable for tests).
+    public static func run(reader: PasteReader, into store: ClipStore, filesDir: URL,
+                           now: Date = Date()) async throws -> PasteImportSummary {
         try reader.verifySchema()
         let lists = try reader.lists()
         let items = try reader.items()
@@ -66,6 +82,7 @@ public enum PasteImporter {
         let grouped = Dictionary(grouping: items, by: { $0.listPk ?? clipboardPk })
 
         var skipReasons: [String: Int] = [:]   // signature → count, for the diagnostics log
+        var importIndex = 0                     // global order across lists → staggered lastUsedAt
 
         for list in lists {
             let sID: UUID? = list.isPinboard ? sectionID[list.name.lowercased()] : nil
@@ -86,10 +103,11 @@ public enum PasteImporter {
                     skipReasons[it.skipSignature ?? "decoded-but-no-detectable-kind", default: 0] += 1
                     continue
                 }
-                let created = it.createdAt ?? Date()
-                let m = ClipItem.make(from: snap, kind: kind, now: created, ttl: 0)
+                let ts = importTimestamps(originalCreatedAt: it.createdAt, index: importIndex, now: now)
+                importIndex += 1
+                let m = ClipItem.make(from: snap, kind: kind, now: ts.createdAt, ttl: 0)
                 let item = ClipItem(
-                    id: id, createdAt: created, lastUsedAt: created, useCount: 1, kind: m.kind,
+                    id: id, createdAt: ts.createdAt, lastUsedAt: ts.lastUsedAt, useCount: 1, kind: m.kind,
                     textPlain: m.textPlain, rtfData: m.rtfData, htmlString: m.htmlString, imageData: m.imageData,
                     sourceAppBundleID: m.sourceAppBundleID, sourceAppName: m.sourceAppName,
                     contentHash: m.contentHash, isPinned: false, expiresAt: nil,
