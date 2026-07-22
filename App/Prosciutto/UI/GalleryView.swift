@@ -10,6 +10,17 @@ private struct CardFramesKey: PreferenceKey {
     }
 }
 
+/// The previewed card's id + on-screen (SwiftUI global) frame, or nil when no preview
+/// is up. Only the card matching `previewID` emits it, so the whole strip reports at
+/// most one anchor — the floating image preview positions itself from it.
+struct PreviewAnchor: Equatable { let id: UUID; let rect: CGRect }
+private struct PreviewAnchorKey: PreferenceKey {
+    static var defaultValue: PreviewAnchor? = nil
+    static func reduce(value: inout PreviewAnchor?, nextValue: () -> PreviewAnchor?) {
+        value = value ?? nextValue()
+    }
+}
+
 struct GalleryView: View {
     @ObservedObject var model: GalleryViewModel
     @EnvironmentObject var theme: ThemeManager
@@ -72,6 +83,10 @@ struct GalleryView: View {
         .onChange(of: model.sectionFilter) { _, _ in model.resetToHome() }
         .onChange(of: model.query.kinds) { _, _ in model.resetToHome() }
         .onChange(of: model.query.text) { _, _ in model.resetToHome() }
+        // Drive the floating image preview from the previewed card's on-screen frame.
+        .onPreferenceChange(PreviewAnchorKey.self) { anchor in
+            model.onPreviewAnchor(anchor.map { ($0.id, $0.rect) })
+        }
         .alert("New section", isPresented: $showingAddSection) {
             TextField("Name", text: $newSectionName)
             Button("Create") {
@@ -215,7 +230,7 @@ struct GalleryView: View {
                 HStack(spacing: 6) { ForEach(kinds, id: \.self) { filterPill($0) } }
             }
             Spacer(minLength: 0)
-            Text("⌘1–9 · ⏎ · esc")
+            Text("⌘1–9 · ⏎ · space · esc")
                 .font(.system(size: 12, weight: .semibold, design: .rounded))
                 .foregroundStyle(.secondary)
             Button { model.onDismiss() } label: {
@@ -324,8 +339,15 @@ struct GalleryView: View {
                             .equatable()
                             .id(item.id)
                             .background(GeometryReader { g in
-                                Color.clear.preference(key: CardFramesKey.self,
-                                                       value: [item.id: g.frame(in: .named("galleryStrip"))])
+                                Color.clear
+                                    .preference(key: CardFramesKey.self,
+                                                value: [item.id: g.frame(in: .named("galleryStrip"))])
+                                    // Only the previewed card reports an anchor, in screen
+                                    // (global) coords the floating preview panel positions from.
+                                    .preference(key: PreviewAnchorKey.self,
+                                                value: item.id == model.previewID
+                                                    ? PreviewAnchor(id: item.id, rect: g.frame(in: .global))
+                                                    : nil)
                             })
                             .transition(.scale(scale: 0.9).combined(with: .opacity))
                             .draggable(item.id.uuidString) { dragPreview(item) }

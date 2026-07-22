@@ -20,6 +20,9 @@ final class AppEnvironment: ObservableObject {
     private let screenshotWatcher = ScreenshotWatcher()
     private let imageEditor = ImageEditService()
     private let videoEditor = VideoEditService()
+    /// Built lazily on first preview — not at launch — so the app never constructs a
+    /// material-backed hosting view before it has finished launching.
+    private var imagePreviewPanel: ImagePreviewPanel?
     private(set) var monitor: ClipboardMonitor!
     private(set) var panel: GalleryPanel!
     private(set) var vm: GalleryViewModel!
@@ -57,6 +60,7 @@ final class AppEnvironment: ObservableObject {
             else { self?.imageEditor.edit(item) }
         }
         vm.cropMedia = { [weak self] item in self?.videoEditor.crop(item) }
+        vm.onPreviewAnchor = { [weak self] anchor in self?.updateImagePreview(anchor) }
         vm.onPaste = { [weak self] item, plain in
             guard let self else { return }
             self.paste.write(item, asPlainText: plain)       // always put it on the clipboard
@@ -150,7 +154,35 @@ final class AppEnvironment: ObservableObject {
 
     func hideGallery(restoreFocus: Bool = true) {
         deactivateSlotHotkeys()         // release ⌘1–9 back to the rest of the system
+        vm.previewID = nil              // never reopen with a stale image preview up
+        imagePreviewPanel?.hide()       // close the floating preview with the gallery (if built)
         panel.hide(restoreFocus: restoreFocus)
+    }
+
+    /// Position or hide the floating image preview from the previewed card's on-screen
+    /// frame (SwiftUI global coords: origin top-left, y-down within the strip window).
+    /// nil `anchor` → hide.
+    private func updateImagePreview(_ anchor: (id: UUID, rect: CGRect)?) {
+        guard let anchor,
+              let item = vm.items.first(where: { $0.id == anchor.id }),
+              let image = ImageDecodeCache.image(for: item),
+              let screen = panel.screen else {
+            imagePreviewPanel?.hide()
+            return
+        }
+        let previewPanel = imagePreviewPanel ?? {
+            let p = ImagePreviewPanel(); imagePreviewPanel = p; return p
+        }()
+        // Convert the card's window-relative (y-down) frame to screen coords (y-up).
+        let win = panel.windowFrame
+        let centerX = win.minX + anchor.rect.midX
+        let topY = win.maxY - anchor.rect.minY   // screen Y of the card's TOP edge
+        previewPanel.show(image: image, anchorCenterX: centerX, anchorTopY: topY,
+                          on: screen, animated: !reduceMotion)
+    }
+
+    private var reduceMotion: Bool {
+        NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
     }
 
     /// ⌘1–9 paste the pinned quick-slots, grabbed globally *only* while the gallery is
@@ -211,6 +243,9 @@ final class AppEnvironment: ObservableObject {
             case 51:                                               // delete: only when not mid-search
                 if self.vm.query.text.isEmpty { Task { await self.vm.deleteSelected() }; return nil }
                 return event
+            case 49:   // space → toggle the image preview, only when not typing into search
+                if self.vm.query.text.isEmpty, self.vm.togglePreview() { return nil }
+                return event   // no image / active search → space types as before
             default:       return event                             // typing → search
             }
         }
