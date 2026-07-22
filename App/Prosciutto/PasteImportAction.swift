@@ -26,15 +26,29 @@ extension AppEnvironment {
             ) else { return }
             do {
                 let s = try await PasteImporter.run(reader: reader, into: store, filesDir: Self.importFilesDir)
+                let raised = try await Self.raiseRetentionCapIfNeeded(store: store)
                 await vm.reload()
-                Self.alert(.informational, "Import complete", Self.summaryText(s))
+                Self.alert(.informational, "Import complete", Self.summaryText(s, retentionRaisedTo: raised))
             } catch {
                 Self.alert(.critical, "Import failed", "\(error)")
             }
         }
     }
 
-    private static func summaryText(_ s: PasteImportSummary) -> String {
+    /// The retention item-cap (`maxItems`) would sweep the oldest of a large imported
+    /// history at the next 5-minute prune. Raise the cap — never lower it — so the whole
+    /// import survives. Skips the "unlimited" sentinel (`maxItems == 0`). Returns the new
+    /// cap if it was raised, else nil.
+    private static func raiseRetentionCapIfNeeded(store: ClipStore) async throws -> Int? {
+        let cap = Preferences.shared.maxItems
+        guard cap > 0 else { return nil }                       // 0 = unlimited, nothing to raise
+        let total = try await store.all().count
+        guard total > cap else { return nil }
+        Preferences.shared.maxItems = total
+        return total
+    }
+
+    private static func summaryText(_ s: PasteImportSummary, retentionRaisedTo raised: Int?) -> String {
         var lines = ["Imported \(s.imported) item\(s.imported == 1 ? "" : "s")"
             + (s.sectionsCreated > 0 ? " into \(s.sectionsCreated) new pinboard\(s.sectionsCreated == 1 ? "" : "s")" : "")
             + "."]
@@ -43,6 +57,7 @@ extension AppEnvironment {
         if s.missingFiles > 0 {
             lines.append("\(s.missingFiles) file\(s.missingFiles == 1 ? "" : "s") couldn't be copied (original moved or deleted).")
         }
+        if let raised { lines.append("Kept all items — retention limit raised to \(raised) to fit your history.") }
         if let log = s.logPath { lines.append("\nDetails: \(log)") }
         return lines.joined(separator: "\n")
     }
