@@ -26,6 +26,11 @@ final class ScreenshotWatcher {
     /// aborts instead of double-arming.
     private var armToken = 0
 
+    /// The feature is on when either capture type is enabled.
+    private var isEnabled: Bool { copyScreenshots || copyRecordings }
+    /// Armed = a live folder watch is running. `source` exists only once `arm` succeeds.
+    var isArmed: Bool { source != nil }
+
     init(pasteboard: NSPasteboard = .general) {
         self.pasteboard = pasteboard
     }
@@ -49,19 +54,37 @@ final class ScreenshotWatcher {
     func start() {
         stop()                       // bumps armToken, cancels any live source
         startedAt = Date()
+        Self.rotateLogIfLarge()
+        log("watch start — screenshots=\(copyScreenshots) recordings=\(copyRecordings) dir=\(Self.screenshotDirectory().path)")
+        arm(attempt: 0, token: armToken)
+    }
+
+    /// Re-attempt arming if the feature is enabled but not yet watching. Called from
+    /// natural "user is back" moments (app becomes active, gallery opens) so a folder
+    /// grant made LATER — in the prompt after our retry window, or by hand in System
+    /// Settings — takes effect without an app restart. No-op once armed.
+    func retryArmIfNeeded() {
+        guard isEnabled, !isArmed else { return }
+        armToken += 1                              // cancel any pending retry chain
+        log("re-arm attempt (returned to app)")
         arm(attempt: 0, token: armToken)
     }
 
     /// Arm the folder watch. Listing the directory is the TCC-gated step (it also
     /// fires the one-time folder-access prompt); if it throws we don't have access
     /// yet. Access is often granted a beat AFTER launch (the user answers the prompt),
-    /// so retry for a while rather than giving up — otherwise the watch would stay
-    /// dead until an app restart.
+    /// so retry through a short window; if access is granted even later, the app-active
+    /// / gallery-open triggers (`retryArmIfNeeded`) re-arm it — so it never stays dead
+    /// until an app restart.
     private func arm(attempt: Int, token: Int) {
         guard token == armToken else { return }   // superseded by a newer start/stop
         let dir = Self.screenshotDirectory()
         guard let existing = try? FileManager.default.contentsOfDirectory(atPath: dir.path) else {
-            guard attempt < 15 else { return }     // ~30s of 2s retries, then give up
+            if attempt == 0 { log("arm: no folder access to \(dir.path) — retrying, or grant it in Settings › Permissions") }
+            guard attempt < 15 else {              // ~30s of 2s retries; then wait for a re-arm trigger
+                log("arm: still no access after retries — waiting until you return to the app")
+                return
+            }
             DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
                 self?.arm(attempt: attempt + 1, token: token)
             }
@@ -74,13 +97,14 @@ final class ScreenshotWatcher {
         for name in existing { processed.insert(dir.appendingPathComponent(name).path) }
 
         let fd = open(dir.path, O_EVTONLY)
-        guard fd >= 0 else { return }
+        guard fd >= 0 else { log("arm: could not open \(dir.path) for watching"); return }
         let src = DispatchSource.makeFileSystemObjectSource(
             fileDescriptor: fd, eventMask: [.write], queue: .main)
         src.setEventHandler { [weak self] in self?.scan() }
         src.setCancelHandler { close(fd) }
         source = src
         src.resume()
+        log("arm: watching \(dir.path)")
     }
 
     func stop() {
@@ -111,14 +135,19 @@ final class ScreenshotWatcher {
     /// repeated folder events don't handle it twice.
     private func handleCandidate(path: String, attempt: Int = 0) {
         if attempt == 0 { processed.insert(path) }   // claim it — re-scans will skip it
+        let name = (path as NSString).lastPathComponent
         if isScreenshot(path) {
-            if copyScreenshots { copyImageToPasteboard(path: path) }
+            if copyScreenshots { log("screenshot detected → copying: \(name)"); copyImageToPasteboard(path: path) }
+            else { log("screenshot detected but auto-copy is off: \(name)") }
         } else if isScreenRecording(path) {
-            if copyRecordings { copyVideoToPasteboard(path: path) }
+            if copyRecordings { log("recording detected → copying: \(name)"); copyVideoToPasteboard(path: path) }
+            else { log("recording detected but auto-copy is off: \(name)") }
         } else if attempt < 4 {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
                 self?.handleCandidate(path: path, attempt: attempt + 1)
             }
+        } else {
+            log("ignored (not a screen capture): \(name)")
         }
     }
 
@@ -149,10 +178,13 @@ final class ScreenshotWatcher {
         let url = URL(fileURLWithPath: path)
         if let img = NSImage(contentsOf: url) {
             pasteboard.writeFileBackedImage(url, image: img)
+            log("copied screenshot to clipboard: \((path as NSString).lastPathComponent)")
         } else if attempt < 3 {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
                 self?.copyImageToPasteboard(path: path, attempt: attempt + 1)
             }
+        } else {
+            log("could not read screenshot file (never became readable): \((path as NSString).lastPathComponent)")
         }
     }
 
@@ -166,8 +198,86 @@ final class ScreenshotWatcher {
             let thumb = VideoThumbnail.firstFrame(of: url)
             DispatchQueue.main.async {
                 self?.pasteboard.writeFileBackedVideo(url, thumbnail: thumb)
+                self?.log("copied recording to clipboard: \((path as NSString).lastPathComponent)")
             }
         }
+    }
+
+    // MARK: - Folder access
+
+    /// Whether the app can currently read the screenshot folder (the TCC-gated step the
+    /// watcher depends on). Calling it on a protected folder that hasn't been granted
+    /// yet triggers the macOS "allow access" prompt — which is exactly what the
+    /// Permissions UI's "Grant Access…" button wants.
+    static func hasFolderAccess() -> Bool {
+        (try? FileManager.default.contentsOfDirectory(atPath: screenshotDirectory().path)) != nil
+    }
+
+    // MARK: - Diagnostics log
+
+    /// Append-only log so a user for whom auto-copy "doesn't work" can send exactly what
+    /// the watcher saw. Lives next to the store; rotated when it grows past ~256 KB.
+    static var logURL: URL? {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
+            .appendingPathComponent("Prosciutto/screenshot-watch.log")
+    }
+
+    private func log(_ message: String) {
+        guard let url = Self.logURL else { return }
+        let data = Data("\(Self.timestamp())  \(message)\n".utf8)
+        try? FileManager.default.createDirectory(
+            at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        // Create the file on first write; otherwise append. Never write(to:) an existing
+        // file — that truncates it, losing the log we're trying to keep.
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            try? data.write(to: url)
+            return
+        }
+        guard let h = try? FileHandle(forWritingTo: url) else { return }
+        defer { try? h.close() }
+        _ = try? h.seekToEnd()
+        try? h.write(contentsOf: data)
+    }
+
+    /// A plain-text diagnostics report for the "auto-copy doesn't work" support loop —
+    /// copied to the clipboard from Settings › Permissions so a user can paste it back.
+    /// Covers the whole failure surface: what's enabled, where captures land, whether we
+    /// have folder access, OS/app version, and the tail of the watch log (which records
+    /// every arm/deny/detect/copy).
+    static func diagnosticsReport() -> String {
+        let app = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
+        var lines = [
+            "Prosciutto — screen-capture auto-copy diagnostics",
+            "app version: \(app)",
+            "macOS: \(ProcessInfo.processInfo.operatingSystemVersionString)",
+            "auto-copy screenshots: \(Preferences.shared.autoCopyScreenshots)",
+            "auto-copy recordings: \(Preferences.shared.autoCopyRecordings)",
+            "capture folder: \(screenshotDirectory().path)",
+            "folder access: \(hasFolderAccess() ? "granted" : "NOT granted")",
+            "",
+            "--- recent watch log ---",
+            recentLog(lines: 50) ?? "(no log yet — the watcher has not run)",
+        ]
+        if lines.last == "" { lines.removeLast() }
+        return lines.joined(separator: "\n")
+    }
+
+    /// The last `n` lines of the watch log, or nil if there is none.
+    private static func recentLog(lines n: Int) -> String? {
+        guard let url = logURL, let text = try? String(contentsOf: url, encoding: .utf8) else { return nil }
+        return text.split(separator: "\n", omittingEmptySubsequences: false).suffix(n).joined(separator: "\n")
+    }
+
+    private static func rotateLogIfLarge() {
+        guard let url = logURL,
+              let size = try? FileManager.default.attributesOfItem(atPath: url.path)[.size] as? Int,
+              size > 256_000 else { return }
+        try? FileManager.default.removeItem(at: url)
+    }
+
+    private static func timestamp() -> String {
+        let f = ISO8601DateFormatter()
+        return f.string(from: Date())
     }
 
     deinit { stop() }

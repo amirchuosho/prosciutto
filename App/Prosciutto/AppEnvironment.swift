@@ -124,6 +124,12 @@ final class AppEnvironment: ObservableObject {
             Task { @MainActor in self?.openGallery() }
         }
 
+        // Returning to Prosciutto is the moment a folder grant made in System Settings
+        // takes effect — re-arm the screen-capture watch if it's enabled but not running.
+        NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in self?.screenshotWatcher.retryArmIfNeeded() }
+        }
+
         startPruneTimer()
 
         if !AccessibilityAuthorizer.isTrusted {
@@ -143,6 +149,7 @@ final class AppEnvironment: ObservableObject {
 
     func openGallery() {
         panel.show()                    // show instantly, no delay
+        screenshotWatcher.retryArmIfNeeded()   // user is back — re-arm if a folder grant landed late
         activateSlotHotkeys()           // grab ⌘1–9 while open, before the front app can
         Task {
             vm.sectionFilter = .all     // always start on All, no leftover group

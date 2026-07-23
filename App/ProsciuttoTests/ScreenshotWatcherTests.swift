@@ -13,4 +13,14 @@ final class ScreenshotWatcherTests: XCTestCase {
         // already processed → ignore
         XCTAssertFalse(ScreenshotWatcher.shouldProcess(path: "/a.png", created: newer, startedAt: start, processed: ["/a.png"]))
     }
+
+    func testFreshWatcherIsNotArmed() {
+        XCTAssertFalse(ScreenshotWatcher().isArmed)
+    }
+
+    func testRetryArmIsNoOpWhenDisabled() {
+        let w = ScreenshotWatcher()   // both copy flags default off
+        w.retryArmIfNeeded()          // disabled → must not arm
+        XCTAssertFalse(w.isArmed)
+    }
 }
