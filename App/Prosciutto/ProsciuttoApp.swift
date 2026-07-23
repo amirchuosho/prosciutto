@@ -63,8 +63,11 @@ private struct MenuContent: View {
     @Environment(\.openSettings) private var openSettings
 
     var body: some View {
+        // No .keyboardShortcut here: the global open hotkey (HotkeyCenter) already
+        // handles the key and respects the user's configured combo. A hardcoded ⌘⇧V
+        // here fired a SECOND open on the same press, colliding with the toggle and
+        // breaking the open animation.
         Button("Open Prosciutto") { env.openGallery() }
-            .keyboardShortcut("v", modifiers: [.command, .shift])
         Divider()
         if env.pasteIsInstalled {
             Button("Import from Paste…") { env.importFromPaste() }

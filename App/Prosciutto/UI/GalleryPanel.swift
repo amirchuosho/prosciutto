@@ -15,6 +15,12 @@ final class GalleryPanel: NSObject {
     private(set) var previousApp: NSRunningApplication?
     /// Called when the panel loses key focus (click outside), unless a sheet is up.
     var onResign: (() -> Void)?
+    /// Bumped on every show/hide so a superseded animation's deferred entrance or
+    /// completion aborts instead of fighting the newer one (e.g. reopen-during-close).
+    private var animGen = 0
+    /// True only while fully shown (entrance finished, not yet hidden). Lets a
+    /// redundant open be a no-op without inferring "already open" from frame geometry.
+    private var isOpen = false
 
     init(content: @escaping () -> AnyView) {
         panel = KeyablePanel(contentRect: NSRect(x: 0, y: 0, width: 900, height: 260),
@@ -126,22 +132,43 @@ final class GalleryPanel: NSObject {
         guard let full = targetFrame() else { return }
         previousApp = NSWorkspace.shared.frontmostApplication
         NSApp.activate(ignoringOtherApps: true)
+        animGen += 1                       // supersede any in-flight hide/show
 
         if reduceMotion {
             panel.alphaValue = 1
             panel.setFrame(full, display: true)
             panel.makeKeyAndOrderFront(nil)
+            isOpen = true
             return
         }
 
+        // Already fully open → just keep it front; a redundant open must not restart
+        // the entrance (defends against a double open trigger).
+        if isOpen {
+            panel.makeKeyAndOrderFront(nil)
+            return
+        }
+
+        // Commit the window at the start position (off-screen below, transparent) and
+        // order it in FIRST, then run the entrance on the next runloop tick. A window
+        // can't animate its frame in the same cycle it first appears — doing so made
+        // the very first open snap open with no slide. Deferring one tick means we
+        // always animate an already-committed window, so every open animates.
+        let gen = animGen
         panel.alphaValue = 0
-        panel.setFrame(belowFrame(from: full), display: false)
+        panel.setFrame(belowFrame(from: full), display: true)
         panel.makeKeyAndOrderFront(nil)
-        NSAnimationContext.runAnimationGroup { ctx in
-            ctx.duration = 0.28
-            ctx.timingFunction = CAMediaTimingFunction(controlPoints: 0.16, 1, 0.3, 1) // ease-out-expo-ish
-            panel.animator().setFrame(full, display: true)
-            panel.animator().alphaValue = 1
+        DispatchQueue.main.async { [weak self] in
+            guard let self, gen == self.animGen else { return }   // superseded by a newer show/hide
+            NSAnimationContext.runAnimationGroup { ctx in
+                ctx.duration = 0.28
+                ctx.timingFunction = CAMediaTimingFunction(controlPoints: 0.16, 1, 0.3, 1) // ease-out-expo-ish
+                self.panel.animator().setFrame(full, display: true)
+                self.panel.animator().alphaValue = 1
+            } completionHandler: { [weak self] in
+                guard let self, gen == self.animGen else { return }   // superseded → don't mark open
+                self.isOpen = true
+            }
         }
     }
 
@@ -157,8 +184,13 @@ final class GalleryPanel: NSObject {
     ///   `NSApp.isActive`.
     func hide(restoreFocus: Bool = true, completion: (() -> Void)? = nil) {
         guard panel.isVisible else { completion?(); return }
+        animGen += 1
+        isOpen = false
+        let gen = animGen
         let finish: () -> Void = { [weak self] in
             guard let self else { return }
+            // A show() reopened us mid-close — don't order the now-open panel out.
+            guard gen == self.animGen else { completion?(); return }
             self.panel.orderOut(nil)
             self.panel.alphaValue = 1
             if restoreFocus { self.previousApp?.activate() }
