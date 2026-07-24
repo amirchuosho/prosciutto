@@ -233,12 +233,26 @@ struct GalleryView: View {
             Text("⌘1–9 · ⏎ · space · esc")
                 .font(.system(size: 12, weight: .semibold, design: .rounded))
                 .foregroundStyle(.secondary)
+            // Grouped with the close button as a matching pair of circular actions at the
+            // right edge. Hidden while searching (a new note can't be found by the query).
+            if model.query.text.isEmpty {
+                Button { Task { await model.addNote() } } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 13, weight: .bold))   // match the ✕ glyph exactly
+                        .foregroundStyle(.secondary)
+                        .frame(width: 30, height: 30)
+                        .background(Circle().fill(Color.secondary.opacity(0.10)))
+                        .contentShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .help("New note")
+            }
             Button { model.onDismiss() } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(.secondary)
                     .frame(width: 30, height: 30)
-                    .background(Circle().fill(Color.secondary.opacity(0.16)))
+                    .background(Circle().fill(Color.secondary.opacity(0.10)))
                     .contentShape(Circle())
             }
             .buttonStyle(.plain)
@@ -325,7 +339,7 @@ struct GalleryView: View {
                                  onPin: { Task { await model.togglePin(item) } },
                                  onDelete: { Task { await model.delete(item) } },
                                  onRename: { newTitle in Task { await model.setTitle(item, newTitle) } },
-                                 onEditBody: { newText in Task { await model.updateText(item, newText: newText) } },
+                                 onEditBody: { newText in Task { await model.commitBody(item, text: newText) } },
                                  onAssignSlot: { n in Task { await model.assignSlot(item, slot: n) } },
                                  // Select the card being edited, so keyboard delete/paste
                                  // target it and not a stale selection on another tile.
@@ -335,7 +349,9 @@ struct GalleryView: View {
                                  },
                                  onEditMedia: { model.editMedia(item) },
                                  onCropMedia: { model.cropMedia(item) },
-                                 isHovered: hoveredID == item.id)
+                                 isHovered: hoveredID == item.id,
+                                 beginEditingOnAppear: item.id == model.newNoteID,
+                                 onBeganEditing: { model.newNoteID = nil })
                             .equatable()
                             .id(item.id)
                             .background(GeometryReader { g in
