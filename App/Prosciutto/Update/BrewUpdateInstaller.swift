@@ -5,14 +5,11 @@ import AppKit
 /// pure/testable; `install()` launches a detached script and quits the app (hand-verified).
 struct BrewUpdateInstaller {
     let cask = "amirchuosho/prosciutto/prosciutto"
-    private let bundleID: String
     private let brewPaths: [String]
     private let fileExists: (String) -> Bool
 
-    init(bundleID: String = Bundle.main.bundleIdentifier ?? "app.prosciutto.Prosciutto",
-         brewPaths: [String] = ["/opt/homebrew/bin/brew", "/usr/local/bin/brew"],
+    init(brewPaths: [String] = ["/opt/homebrew/bin/brew", "/usr/local/bin/brew"],
          fileExists: @escaping (String) -> Bool = { FileManager.default.isExecutableFile(atPath: $0) }) {
-        self.bundleID = bundleID
         self.brewPaths = brewPaths
         self.fileExists = fileExists
     }
