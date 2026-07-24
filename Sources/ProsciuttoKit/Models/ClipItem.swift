@@ -58,7 +58,7 @@ public struct ClipItem: Identifiable, Sendable, Equatable {
         // watcher supplies a real first-frame thumbnail, but a Finder copy of the
         // .mov supplies the generic 1024² file icon. So drop it (like an image file)
         // and let the tile regenerate a real frame from the .mov on disk.
-        let imageData: Data? = (isImageFile || kind == .video) ? nil : snapshot.imageData
+        let imageData: Data? = (kind == .video) ? nil : snapshot.imageData
         // File clips store ALL their paths (newline-joined) so a multi-file clip
         // renders as a name list / count, not a single preview. Hash by the
         // path(s), not the flaky pasteboard icon, so dedupe is stable.
