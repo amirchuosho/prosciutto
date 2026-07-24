@@ -16,6 +16,19 @@ final class GitHubReleaseProviderTests: XCTestCase {
     func testRateLimited() async {
         await assertThrows(provider(status: 403, body: ""), .rateLimited)
     }
+    func testRateLimitedOn429() async {
+        await assertThrows(provider(status: 429, body: ""), .rateLimited)
+    }
+    func testUnexpectedStatusIsBadResponse() async {
+        await assertThrows(provider(status: 500, body: ""), .badResponse)
+    }
+    func testNonHTTPResponseIsBadResponse() async {
+        let p = GitHubReleaseProvider(fetch: { url in
+            (Data(#"{"tag_name":"v0.5.0"}"#.utf8), URLResponse(url: url, mimeType: nil,
+                                                              expectedContentLength: 0, textEncodingName: nil))
+        })
+        await assertThrows(p, .badResponse)
+    }
     func testNoRelease() async {
         await assertThrows(provider(status: 404, body: ""), .noRelease)
     }
