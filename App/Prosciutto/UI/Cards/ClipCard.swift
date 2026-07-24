@@ -26,6 +26,10 @@ struct ClipCard: View {
     /// Whether the pointer is over this card. Computed centrally by the strip from
     /// the cursor position (see GalleryView), so hover can't miss enter/exit events.
     var isHovered: Bool = false
+    /// When true, this card auto-enters the inline editor on appear (a freshly added note).
+    var beginEditingOnAppear: Bool = false
+    /// Called once the card has consumed `beginEditingOnAppear`, so the model can clear its flag.
+    var onBeganEditing: () -> Void = {}
 
     @State private var pickingSlot = false
     @State private var editingTitle = false
@@ -33,6 +37,7 @@ struct ClipCard: View {
     @FocusState private var titleFocused: Bool
     @State private var editingBody = false
     @State private var bodyDraft = ""
+    @State private var isNewNote = false
     @FocusState private var bodyFocused: Bool
     @Environment(\.colorScheme) private var scheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -102,6 +107,14 @@ struct ClipCard: View {
         .onDisappear {
             if editingTitle { cancelTitleEdit() }
             if editingBody { cancelBodyEdit() }
+        }
+        .onAppear {
+            // Deterministic each appear: a fresh note ⇒ new; anything else ⇒ not — so a
+            // recycled card can never carry a stale new-note flag into a later edit.
+            isNewNote = beginEditingOnAppear
+            guard beginEditingOnAppear else { return }
+            startBodyEdit()      // sets bodyDraft = "" (empty note), editingBody = true, focuses
+            onBeganEditing()     // model clears newNoteID so re-appears don't re-trigger
         }
     }
 
@@ -442,11 +455,16 @@ struct ClipCard: View {
         guard editingBody else { return }   // idempotent: multiple commit paths must not re-fire onEditBody
         editingBody = false
         onEditingChanged(false)
+        isNewNote = false
         onEditBody(bodyDraft)
     }
     private func cancelBodyEdit() {
         editingBody = false
         onEditingChanged(false)
+        if isNewNote {
+            isNewNote = false
+            onEditBody(bodyDraft)   // new note: commit draft; blank draft is discarded by the model
+        }
     }
 
     private var relativeTime: String {
