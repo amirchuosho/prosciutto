@@ -26,6 +26,9 @@ final class GalleryViewModel: ObservableObject {
     /// True while a card title is being edited inline — the key monitor then
     /// leaves arrows/return/esc to the text field instead of navigating cards.
     @Published var isEditingTitle = false
+    /// A just-created note whose card should auto-enter the inline editor. Cleared once
+    /// the card consumes it (on appear).
+    @Published var newNoteID: UUID?
 
     private let store: ClipStore
     private let sectionPalette = ["#F56B8C", "#5C8FFF", "#52CC85", "#FFAA5C", "#4ECDC8", "#C77DFF"]
@@ -33,6 +36,9 @@ final class GalleryViewModel: ObservableObject {
     /// available without holding a session's worth of (possibly image-heavy) deletes.
     private var deletedStack: [ClipItem] = []
     private let maxUndo = 20
+    /// New notes not yet committed for the first time — used to discard one left blank
+    /// without touching pre-existing clips.
+    private var pendingNoteIDs: Set<UUID> = []
 
     /// Set by AppEnvironment. Hides the panel, restores the previous app, then synthesizes paste.
     var onPaste: (ClipItem, Bool) -> Void = { _, _ in }
@@ -308,5 +314,48 @@ final class GalleryViewModel: ObservableObject {
         updated.contentHash = ContentHasher.hash(kind: item.kind, primary: Data(newText.utf8))
         try? await store.update(updated)
         await reload()
+    }
+
+    /// Create an empty text note in the CURRENT group and open it for editing. Lands
+    /// after the pinned items (unpinned, lastUsedAt = now) like a freshly copied item.
+    func addNote() async {
+        let targetSection: UUID?
+        switch sectionFilter {
+        case .section(let id): targetSection = id
+        case .all:             targetSection = nil
+        case .pinned:          targetSection = nil; sectionFilter = .all   // a new note is unpinned
+        }
+        query.kinds = []   // a text note must not be hidden by a type filter
+
+        let now = Date()
+        // The note originates from Prosciutto itself, so tag its source app as ours. The
+        // card's existing source-app-icon path then renders the real pink app icon (same
+        // machinery that shows Preview/QuickTime icons) — no per-kind special-casing.
+        let note = ClipItem(id: UUID(), createdAt: now, lastUsedAt: now, useCount: 1,
+                            kind: .text, textPlain: "",
+                            sourceAppBundleID: Bundle.main.bundleIdentifier,
+                            contentHash: ContentHasher.hash(kind: .text, primary: Data()),
+                            sectionID: targetSection)
+        guard (try? await store.upsert(note)) != nil else { return }   // write failed → no phantom note
+        pendingNoteIDs.insert(note.id)
+        // Set BEFORE reload. reload() awaits (store.sections) AFTER it assigns `items`, so it
+        // yields to the runloop with the new card already present — SwiftUI can insert the card
+        // and fire its onAppear there. If newNoteID were set after reload, that first onAppear
+        // would miss it (no edit mode on create), the flag would never be consumed, and a later
+        // re-appear — e.g. switching groups — would fire it instead. Flag-first closes the window.
+        newNoteID = note.id
+        await reload()
+        select(note)          // re-assert selection after reload (reload/filter changes can move it)
+    }
+
+    /// Commit an inline body edit. A brand-new note left blank is discarded; otherwise
+    /// the text is saved. Existing clips are never auto-deleted for being blanked.
+    func commitBody(_ item: ClipItem, text: String) async {
+        let wasNewNote = pendingNoteIDs.remove(item.id) != nil
+        if wasNewNote, text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            await delete(item)
+        } else {
+            await updateText(item, newText: text)
+        }
     }
 }
