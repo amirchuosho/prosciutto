@@ -13,6 +13,7 @@ struct SettingsView: View {
     @State private var soundEnabled = Preferences.shared.captureSoundEnabled
     @State private var soundName = Preferences.shared.captureSoundName
     @State private var useFuzzy = Preferences.shared.useFuzzySearch
+    @State private var checkForUpdatesOnLaunch = Preferences.shared.checkForUpdatesOnLaunch
     // Hotkeys
     @State private var openCombo = KeyCombo(storedKeyCode: Preferences.shared.openHotkeyKeyCode,
                                             storedModifiers: Preferences.shared.openHotkeyModifiers)
@@ -61,6 +62,10 @@ struct SettingsView: View {
                     .onChange(of: pasteAutomatically) { _, v in Preferences.shared.pasteAutomatically = v }
                 Toggle("Fuzzy search", isOn: $useFuzzy)
                     .onChange(of: useFuzzy) { _, v in Preferences.shared.useFuzzySearch = v; changed() }
+                Toggle("Check for updates on launch", isOn: $checkForUpdatesOnLaunch)
+                    .onChange(of: checkForUpdatesOnLaunch) { _, v in
+                        Preferences.shared.checkForUpdatesOnLaunch = v
+                    }
                 Toggle("Copy screenshots to clipboard automatically", isOn: $autoCopyScreenshots)
                     .onChange(of: autoCopyScreenshots) { _, v in Preferences.shared.autoCopyScreenshots = v; changed() }
                 Toggle("Copy screen recordings to clipboard automatically", isOn: $autoCopyRecordings)

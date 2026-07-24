@@ -9,7 +9,7 @@ struct ProsciuttoApp: App {
 
     var body: some Scene {
         MenuBarExtra {
-            MenuContent(env: env)
+            MenuContent(env: env, updates: env.updates)
         } label: {
             HamBarLabel(env: env)
         }
@@ -60,6 +60,7 @@ private enum HamBarRenderer {
 
 private struct MenuContent: View {
     @ObservedObject var env: AppEnvironment
+    @ObservedObject var updates: UpdateService
     @Environment(\.openSettings) private var openSettings
 
     var body: some View {
@@ -79,6 +80,11 @@ private struct MenuContent: View {
             openSettings()
         }
         .keyboardShortcut(",", modifiers: .command)
+        Divider()
+        if case let .available(v) = updates.availability {
+            Button("Update Available — \(v)") { env.installUpdate() }
+        }
+        Button("Check for Updates…") { env.checkForUpdatesManual() }
         Divider()
         Button("Quit Prosciutto") { NSApplication.shared.terminate(nil) }
             .keyboardShortcut("q")
