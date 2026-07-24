@@ -27,6 +27,8 @@ final class Preferences {
         static let useFuzzySearch = "search.useFuzzy"
         static let autoCopyScreenshots = "capture.autoCopyScreenshots"
         static let autoCopyRecordings = "capture.autoCopyRecordings"
+        static let checkOnLaunch = "updates.checkOnLaunch"
+        static let lastUpdateCheck = "updates.lastCheckAt"
     }
 
     var customAccentHex: String {
@@ -141,6 +143,17 @@ final class Preferences {
     var autoCopyRecordings: Bool {
         get { defaults.object(forKey: Keys.autoCopyRecordings) as? Bool ?? false }     // default off
         set { defaults.set(newValue, forKey: Keys.autoCopyRecordings) }
+    }
+
+    /// Silent update check on launch (throttled). Manual check ignores this.
+    var checkForUpdatesOnLaunch: Bool {
+        get { defaults.object(forKey: Keys.checkOnLaunch) as? Bool ?? true }
+        set { defaults.set(newValue, forKey: Keys.checkOnLaunch) }
+    }
+    /// Timestamp of the last successful update check, for throttling the launch check.
+    var lastUpdateCheckAt: Date? {
+        get { defaults.object(forKey: Keys.lastUpdateCheck) as? Date }
+        set { defaults.set(newValue, forKey: Keys.lastUpdateCheck) }
     }
 
     var captureFilter: CaptureFilter {
