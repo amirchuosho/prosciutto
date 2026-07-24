@@ -20,6 +20,8 @@ final class AppEnvironment: ObservableObject {
     private let screenshotWatcher = ScreenshotWatcher()
     private let imageEditor = ImageEditService()
     private let videoEditor = VideoEditService()
+    let updates = UpdateService(provider: GitHubReleaseProvider())
+    private let updateInstaller = BrewUpdateInstaller()
     /// Built lazily on first preview — not at launch — so the app never constructs a
     /// material-backed hosting view before it has finished launching.
     private var imagePreviewPanel: ImagePreviewPanel?
@@ -135,6 +137,8 @@ final class AppEnvironment: ObservableObject {
         if !AccessibilityAuthorizer.isTrusted {
             AccessibilityAuthorizer.prompt()
         }
+
+        Task { await updates.check(.launch) }
     }
 
     deinit {
@@ -332,6 +336,44 @@ final class AppEnvironment: ObservableObject {
         isPaused.toggle()
         monitor.isPaused = isPaused
         Preferences.shared.isPaused = isPaused
+    }
+
+    /// Manual "Check for Updates…": always checks, then reports the outcome in an alert.
+    func checkForUpdatesManual() {
+        Task {
+            await updates.check(.manual)
+            let a = NSAlert()
+            NSApp.activate(ignoringOtherApps: true)
+            switch updates.availability {
+            case .available(let v):
+                // This alert IS the confirmation — install directly, don't route through
+                // installUpdate() (that re-confirms; the menu's "Update Available" item uses it).
+                a.messageText = "Update available — \(v)"
+                a.informativeText = "You're on \(updates.currentVersion). Prosciutto will quit and reopen once the update finishes."
+                a.addButton(withTitle: "Update & Restart"); a.addButton(withTitle: "Later")
+                if a.runModal() == .alertFirstButtonReturn { updateInstaller.install() }
+                return
+            case .upToDate:
+                a.messageText = "You're up to date"; a.informativeText = "Prosciutto \(updates.currentVersion) is the latest version."
+            case .failed:
+                a.messageText = "Couldn't check for updates"; a.informativeText = "Please check your connection and try again."
+            case .unknown, .checking:
+                return
+            }
+            a.addButton(withTitle: "OK")
+            a.runModal()
+        }
+    }
+
+    /// Confirm, then hand off to the background brew upgrade.
+    func installUpdate() {
+        guard case .available(let v) = updates.availability else { return }
+        let a = NSAlert()
+        a.messageText = "Update to \(v)?"
+        a.informativeText = "Prosciutto will quit and reopen once the update finishes."
+        a.addButton(withTitle: "Update & Restart"); a.addButton(withTitle: "Cancel")
+        NSApp.activate(ignoringOtherApps: true)
+        if a.runModal() == .alertFirstButtonReturn { updateInstaller.install() }
     }
 
     private func playCaptureSound() {
