@@ -40,6 +40,16 @@ public enum KindDetector {
         return nil
     }
 
+    /// The single image file this snapshot represents, or nil. Uses the same
+    /// `imageExtensions` rule `detect` uses to classify a `.image` file clip, so the
+    /// capture layer and the classifier never disagree. Nil for multi-file, a single
+    /// non-image file, or a snapshot with no file URL.
+    public static func singleImageFileURL(in snapshot: PasteboardSnapshot) -> URL? {
+        guard snapshot.fileURLs.count == 1, let url = snapshot.fileURLs.first,
+              imageExtensions.contains(url.pathExtension.lowercased()) else { return nil }
+        return url
+    }
+
     static func isColor(_ t: String) -> Bool {
         let r = NSRange(t.startIndex..., in: t)
         return colorRegex.firstMatch(in: t, range: r) != nil
