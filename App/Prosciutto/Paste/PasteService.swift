@@ -2,24 +2,28 @@ import AppKit
 import ProsciuttoKit
 
 final class PasteService {
+    private let pasteboard: NSPasteboard
+    init(pasteboard: NSPasteboard = .general) { self.pasteboard = pasteboard }
+
     func write(_ item: ClipItem, asPlainText: Bool) {
-        let pb = NSPasteboard.general
+        let pb = pasteboard
         pb.clearContents()
         switch item.kind {
         case .image:
-            if let d = item.imageData, let img = NSImage(data: d) {
-                // Write a real NSImage: it puts the standard image types (TIFF etc.)
-                // on the pasteboard, which apps recognize when pasting. Writing only
-                // .png data is understood by far fewer targets.
-                pb.writeObjects([img])
-            } else if let path = item.textPlain {
-                // File-backed image: write the file URL (so Finder/apps get the
-                // file) plus the image itself (so editors get the pixels).
-                let url = URL(fileURLWithPath: path)
-                var objects: [NSPasteboardWriting] = [url as NSURL]
-                if let img = NSImage(contentsOf: url) { objects.append(img) }
-                pb.writeObjects(objects)
+            var objects: [NSPasteboardWriting] = []
+            // Paste the real file when it still exists (Finder/Mail/Slack get the file).
+            if let path = item.textPlain, !path.isEmpty,
+               FileManager.default.fileExists(atPath: path) {
+                objects.append(URL(fileURLWithPath: path) as NSURL)
             }
+            // Durable pixels: stored bytes if present, else fall back to reading the file
+            // (legacy path-only clips captured before this change).
+            if let d = item.imageData, let img = NSImage(data: d) {
+                objects.append(img)
+            } else if let path = item.textPlain, let img = NSImage(contentsOfFile: path) {
+                objects.append(img)
+            }
+            if !objects.isEmpty { pb.writeObjects(objects) }
         case .video:
             // File-backed recording: write the file URL so pasting drops the .mov
             // into Finder/Mail/Slack, plus the thumbnail so image targets get a
