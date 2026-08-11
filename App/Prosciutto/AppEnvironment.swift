@@ -158,6 +158,8 @@ final class AppEnvironment: ObservableObject {
         Task {
             vm.sectionFilter = .all     // always start on All, no leftover group
             vm.query.text = ""          // cleared search
+            vm.isSearchFocused = false  // Items own focus on open — explicit, not emergent
+            vm.wantsSearchFocus = false // drop any lingering search-field focus
             await vm.reload()
             vm.resetToHome()            // newest clip + strip reset to start (pins visible)
         }
@@ -244,20 +246,35 @@ final class AppEnvironment: ObservableObject {
                 return event
             }
 
-            // Navigation keys. Arrow keys carry .function/.numericPad flags, so
-            // match on keyCode and ignore non-command modifiers here.
+            // Search owns plain (unmodified) keys: cursor moves, typing, space-in-query.
+            // ⌘-combinations are already handled above and still work while searching.
+            if self.vm.isSearchFocused {
+                switch event.keyCode {
+                case 53: self.vm.resignSearch(); return nil      // esc → back to Items (query kept)
+                case 36, 76: self.vm.pasteSelected(); return nil // return → paste highlighted item
+                default: return event                            // arrows/space/letters → the field
+                }
+            }
+
+            // Items focused (search not focused): navigate, and type-to-search on a printable key.
             switch event.keyCode {
             case 123, 126: self.vm.moveSelection(-1); return nil   // left / up
             case 124, 125: self.vm.moveSelection(1); return nil    // right / down
             case 36, 76:   self.vm.pasteSelected(); return nil     // return / enter
-            case 53:       self.hideGallery(); return nil          // esc
-            case 51:                                               // delete: only when not mid-search
-                if self.vm.query.text.isEmpty { Task { await self.vm.deleteSelected() }; return nil }
+            case 53:       self.hideGallery(); return nil          // esc → hide
+            case 51:       Task { await self.vm.deleteSelected() }; return nil   // delete
+            case 49:                                               // space → image preview
+                if self.vm.togglePreview() { return nil }
                 return event
-            case 49:   // space → toggle the image preview, only when not typing into search
-                if self.vm.query.text.isEmpty, self.vm.togglePreview() { return nil }
-                return event   // no image / active search → space types as before
-            default:       return event                             // typing → search
+            default:
+                let mods2 = event.modifierFlags.intersection([.command, .option, .control])
+                if let seed = GalleryViewModel.searchSeed(chars: event.characters ?? "",
+                                                          keyCode: event.keyCode,
+                                                          hasModifier: !mods2.isEmpty) {
+                    self.vm.beginSearch(seed: seed)
+                    return nil
+                }
+                return event
             }
         }
     }
