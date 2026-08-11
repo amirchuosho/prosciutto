@@ -63,13 +63,44 @@ struct GalleryView: View {
         // edge. Because the clip is at the panel (not the strip edge), the end cards'
         // glow has the full padding to breathe and is never cropped.
         .clipShape(RoundedRectangle(cornerRadius: DS.Radius.panel, style: .continuous))
+        // A click on the panel's dead space (header/section-bar gaps, padding, the empty
+        // state) resigns search. Cards, chips, filter pills, the +/✕ buttons and the search
+        // capsule all consume their own taps first, so this only fires on genuinely inert
+        // space — controls keep focus (locked: controls never steal/drop focus), item clicks
+        // keep their own resign. Scoped to the clipped panel rect, above the transparent
+        // safety margin, so a click in that margin isn't swallowed.
+        .contentShape(Rectangle())
+        .onTapGesture { model.resignSearch() }
         // Pin the panel to the bottom of its (slightly taller, see heightSafetyMargin)
         // window so the safety margin is transparent space above the panel, never a gap
         // below it — the strip stays flush at the screen's bottom edge.
         .frame(maxHeight: .infinity, alignment: .bottom)
         .tint(theme.accent)
         .preferredColorScheme(theme.colorScheme)
-        .onAppear { searchFocused = true }
+        // Items own focus on open; search focuses only when clicked or typed into.
+        .onChange(of: searchFocused) { _, focused in model.isSearchFocused = focused }
+        // Bridge the model's one-shot focus request (type-to-search seed, clear button,
+        // card/empty taps) to @FocusState. The view consumes it and resets to nil so the
+        // request can't re-fire on the next render.
+        .onChange(of: model.wantsSearchFocus) { _, req in
+            guard let req else { return }
+            searchFocused = req
+            model.wantsSearchFocus = nil
+            // A programmatic focus makes SwiftUI select ALL the field's text, so the
+            // type-to-search seed (already in query.text) lands selected and the next
+            // keystroke replaces it. Collapse the selection to the end once focus lands
+            // (next runloop turn) so the seed survives and typing appends. Only the
+            // programmatic paths (type-to-search seed, clear button, a click on the
+            // capsule's icon/padding) run this; a click on the field's own text focuses
+            // via the TextField directly and keeps its own caret.
+            if req {
+                DispatchQueue.main.async {
+                    guard let editor = NSApp.keyWindow?.firstResponder as? NSTextView else { return }
+                    let end = (editor.string as NSString).length
+                    editor.selectedRange = NSRange(location: end, length: 0)
+                }
+            }
+        }
         .sheet(item: $editingSection) { section in
             EditSectionSheet(section: section, palette: model.sectionColors) { name, hex in
                 Task { await model.updateSection(section, name: name, hex: hex) }
@@ -267,10 +298,14 @@ struct GalleryView: View {
             TextField("Search clipboard…", text: $model.query.text)
                 .textFieldStyle(.plain)
                 .focused($searchFocused)
+                // Fill the capsule so a click anywhere across its width lands on the
+                // field (the plain style otherwise hugs its text, leaving the padding
+                // and icon as dead zones that don't focus).
+                .frame(maxWidth: .infinity)
             if !model.query.text.isEmpty {
                 Button {
                     model.query.text = ""
-                    searchFocused = true
+                    model.focusSearch()   // keep search focused after clearing
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundStyle(.secondary)
@@ -280,7 +315,16 @@ struct GalleryView: View {
             }
         }
         .padding(.horizontal, 14).padding(.vertical, 9)
-        .background(.regularMaterial, in: Capsule())
+        // The capsule fill lives on a background layer BEHIND the field, and carries the
+        // focus tap. A click on the field's own text hits the TextField (in front) and
+        // positions the caret there; a click on the icon or padding — where only this
+        // background sits — falls through here and focuses (caret to end, via the request
+        // channel). Z-order, not gesture arbitration, keeps the two from fighting.
+        .background {
+            Capsule().fill(.regularMaterial)
+                .contentShape(Capsule())
+                .onTapGesture { model.focusSearch() }
+        }
         .overlay(Capsule().strokeBorder(theme.accent.opacity(searchFocused ? 0.8 : 0), lineWidth: 1.5))
         .shadow(color: theme.accent.opacity(searchFocused ? 0.35 : 0), radius: 8)
         .frame(maxWidth: 250)
@@ -369,6 +413,7 @@ struct GalleryView: View {
                             .draggable(item.id.uuidString) { dragPreview(item) }
                             // First click highlights; a click on the already-selected card pastes.
                             .onTapGesture {
+                                model.resignSearch()   // clicking a card leaves search
                                 if idx == model.selection { model.paste(item) }
                                 else { model.selection = idx }
                             }
@@ -423,6 +468,13 @@ struct GalleryView: View {
             // clip (see body) contains it inside the panel without cropping the glow.
             .scrollClipDisabled()
             .frame(height: DS.CardSize.height + 2 * DS.Space.lg)
+            // Tapping empty strip space (not a card) resigns search and selects the top
+            // item; cards' own .onTapGesture above takes precedence over this background one.
+            .contentShape(Rectangle())
+            .onTapGesture {
+                model.resignSearch()   // clicking empty area leaves search
+                model.selection = 0    // top item
+            }
             .onChange(of: model.selection) { _, _ in scrollToSelection(proxy) }
             // Declared AFTER the selection handler so, on open, the reset-to-start wins
             // over the selection-follow scroll (both fire in the same update) — the
