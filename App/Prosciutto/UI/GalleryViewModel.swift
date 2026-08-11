@@ -26,6 +26,13 @@ final class GalleryViewModel: ObservableObject {
     /// True while a card title is being edited inline — the key monitor then
     /// leaves arrows/return/esc to the text field instead of navigating cards.
     @Published var isEditingTitle = false
+    /// True while the search field owns focus. The key monitor reads this to route keys:
+    /// while true, plain keys belong to the field (cursor / typing); while false, Items own
+    /// them (navigation, space = preview, type-to-search).
+    @Published var isSearchFocused = false
+    /// Request channel to drive the view's @FocusState: nil = none, true = take, false = drop.
+    /// The view consumes it and resets to nil.
+    @Published var wantsSearchFocus: Bool? = nil
     /// A just-created note whose card should auto-enter the inline editor. Cleared once
     /// the card consumes it (on appear).
     @Published var newNoteID: UUID?
@@ -193,6 +200,43 @@ final class GalleryViewModel: ObservableObject {
     /// starts), so keyboard actions act on it rather than a stale selection elsewhere.
     func select(_ item: ClipItem) {
         if let i = filtered().firstIndex(where: { $0.id == item.id }) { selection = i }
+    }
+
+    /// Type-to-search: seed the query with the first typed character and ask the view to
+    /// focus the field. Seeds the text directly so the first char is never lost to the
+    /// async @FocusState change.
+    func beginSearch(seed: Character) {
+        query.text = String(seed)
+        wantsSearchFocus = true
+    }
+
+    /// Request search focus WITHOUT seeding the query — a click on the field's chrome
+    /// (icon/padding), or keeping focus after the clear button. The view drives its
+    /// @FocusState from this and lands the caret at the end.
+    func focusSearch() {
+        wantsSearchFocus = true
+    }
+
+    /// Drop search focus (e.g. esc, or a click into the item area). The current/top item
+    /// stays selected; the view resigns @FocusState.
+    func resignSearch() {
+        wantsSearchFocus = false
+    }
+
+    /// Whether a keystroke, while Items are focused, should start a type-to-search — and if
+    /// so, the character to seed. Pure: no reserved key (arrows/return/esc/tab/delete/space),
+    /// no ⌘/⌃/⌥, and a single printable, non-control, non-whitespace character.
+    static func searchSeed(chars: String, keyCode: UInt16, hasModifier: Bool) -> Character? {
+        guard !hasModifier else { return nil }
+        let reserved: Set<UInt16> = [123, 124, 125, 126, 36, 76, 53, 48, 51, 49]
+        guard !reserved.contains(keyCode) else { return nil }
+        guard chars.count == 1, let c = chars.first, let s = c.unicodeScalars.first,
+              !CharacterSet.controlCharacters.contains(s),
+              !CharacterSet.whitespacesAndNewlines.contains(s),
+              !CharacterSet.illegalCharacters.contains(s) else { return nil }
+        // Reject the private-use area macOS uses for function keys (F1, arrows as unichar, …).
+        guard !(0xF700...0xF8FF).contains(s.value) else { return nil }
+        return c
     }
 
     /// Pinned cards in slot order. The slot a card occupies (its ⌘-number) is its
