@@ -97,6 +97,12 @@ Prosciutto asks for **Accessibility** access so it can paste into the app you're
 items are copied to the clipboard and you press `⌘V` yourself. Grant via
 **System Settings → Privacy & Security → Accessibility**.
 
+> **Updating from 0.5.0 or earlier:** 0.5.1 moves to a stable code signature so macOS keeps your
+> permissions across future updates. Because the signature changed, this one update may show
+> Prosciutto as enabled but not working — **remove it** from System Settings → Privacy & Security
+> (Accessibility, and Screen & Recording if used) with the **“−”** button and **re-add** it once.
+> After 0.5.1, every update keeps your permissions.
+
 ## Privacy
 
 All clipboard data lives in a local Core Data store on your Mac. Nothing is sent anywhere. The only

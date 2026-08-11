@@ -70,10 +70,13 @@ private struct MenuContent: View {
         // breaking the open animation.
         Button("Open Prosciutto") { env.openGallery() }
         Divider()
-        if env.pasteIsInstalled {
-            Button("Import from Paste…") { env.importFromPaste() }
-            Divider()
-        }
+        // Always shown. Detecting whether Paste is installed used to read other apps' data
+        // containers at every menu render, which tripped macOS's "access data from other apps"
+        // prompt. That scan now happens lazily, only inside importFromPaste() when the user
+        // clicks this — so the menu never touches foreign data. If no Paste store is found on
+        // click, importFromPaste() shows a "Paste not found" notice.
+        Button("Import from Paste…") { env.importFromPaste() }
+        Divider()
         Button(env.isPaused ? "Resume Capture" : "Pause Capture") { env.togglePause() }
         Button("Settings…") {
             NSApp.activate(ignoringOtherApps: true)
