@@ -237,7 +237,7 @@ final class AppEnvironment: ObservableObject {
             if mods.contains(.command) {
                 if mods == .command, event.keyCode == 123 { self.vm.moveToStart(); return nil }  // ⌘← start
                 if mods == .command, event.keyCode == 124 { self.vm.moveToEnd(); return nil }     // ⌘→ end
-                if mods == .command, event.keyCode == 51 {                // ⌘⌫ delete
+                if mods == .command, event.keyCode == 51 || event.keyCode == 117 {  // ⌘⌫ / ⌘⌦ delete
                     Task { await self.vm.deleteSelected() }; return nil
                 }
                 if mods == .command, event.keyCode == 6 {                 // ⌘Z undo delete
@@ -262,7 +262,7 @@ final class AppEnvironment: ObservableObject {
             case 124, 125: self.vm.moveSelection(1); return nil    // right / down
             case 36, 76:   self.vm.pasteSelected(); return nil     // return / enter
             case 53:       self.hideGallery(); return nil          // esc → hide
-            case 51:       Task { await self.vm.deleteSelected() }; return nil   // delete
+            case 51, 117:  Task { await self.vm.deleteSelected() }; return nil   // ⌫ / ⌦ delete
             case 49:                                               // space → image preview
                 if self.vm.togglePreview() { return nil }
                 return event
